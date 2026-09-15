@@ -1,10 +1,10 @@
 module github.com/USERNAME/smeagol-wysiwyg
 
-go 1.22
+go 1.23
 
 require (
-	github.com/fsnotify/fsnotify v1.7.0
-	github.com/yuin/goldmark v1.7.1
+	github.com/fsnotify/fsnotify v1.10.1
+	github.com/yuin/goldmark v1.8.6
 )
 
-require golang.org/x/sys v0.4.0 // indirect
+require golang.org/x/sys v0.13.0 // indirect

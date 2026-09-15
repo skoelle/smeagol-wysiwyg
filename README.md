@@ -20,7 +20,7 @@ Details on the design goals and architecture are in [SPEC.md](SPEC.md).
 
 ## Build
 
-Requires Go 1.22 or later.
+Requires Go 1.23 or later.
 
 Before the first build, replace the `USERNAME` placeholder in the module path (`go.mod`, `main.go`, `internal/server/server.go`) with your actual GitHub username:
 
