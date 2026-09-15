@@ -126,6 +126,7 @@ main#content a { color: var(--color-accent); }
   border-radius: var(--radius) var(--radius) 0 0;
   flex-wrap: wrap;
 }
+.editor-toolbar[hidden] { display: none !important; }
 
 .toolbar-group {
   display: flex;

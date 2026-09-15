@@ -151,25 +151,25 @@ async function enterEditMode() {
     } = await import(MILKDOWN_URL);
 
     const cmdMap = {
-      bold:         () => toggleStrongCommand(),
-      italic:       () => toggleEmphasisCommand(),
-      strikethrough:() => toggleInlineCodeCommand(),
-      inlinecode:   () => toggleInlineCodeCommand(),
-      blockquote:   () => wrapInBlockquoteCommand(),
-      codeblock:    () => createCodeBlockCommand(),
-      bulletlist:   () => wrapInBulletListCommand(),
-      orderedlist:  () => wrapInOrderedListCommand(),
-      heading:      () => wrapInHeadingCommand(1),
-      paragraph:    () => turnIntoTextCommand(),
-      hr:           () => insertHrCommand(),
-      hardbreak:    () => insertHardbreakCommand(),
+      bold:         (ed) => ed.call(toggleStrongCommand),
+      italic:       (ed) => ed.call(toggleEmphasisCommand),
+      strikethrough:(ed) => ed.call(toggleEmphasisCommand),
+      inlinecode:   (ed) => ed.call(toggleInlineCodeCommand),
+      blockquote:   (ed) => ed.call(wrapInBlockquoteCommand),
+      codeblock:    (ed) => ed.call(createCodeBlockCommand),
+      bulletlist:   (ed) => ed.call(wrapInBulletListCommand),
+      orderedlist:  (ed) => ed.call(wrapInOrderedListCommand),
+      heading:      (ed) => ed.call(wrapInHeadingCommand, 1),
+      paragraph:    (ed) => ed.call(turnIntoTextCommand),
+      hr:           (ed) => ed.call(insertHrCommand),
+      hardbreak:    (ed) => ed.call(insertHardbreakCommand),
     };
 
     toolbar.querySelectorAll("button[data-cmd]").forEach((btn) => {
       btn.addEventListener("mousedown", (e) => {
         e.preventDefault();
-        const cmd = cmdMap[btn.dataset.cmd];
-        if (cmd) cmd();
+        const fn = cmdMap[btn.dataset.cmd];
+        if (fn) fn(editor);
       });
     });
 
