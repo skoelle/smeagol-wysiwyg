@@ -9,9 +9,9 @@ import (
 func setup(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, "unter", "tief", "verzeichnis"), 0o755)
-	os.WriteFile(filepath.Join(dir, "README.md"), []byte("# Übersicht\nDies ist ein Test mit Umlaut: Käse und Müll.\n"), 0o644)
-	os.WriteFile(filepath.Join(dir, "unter", "tief", "verzeichnis", "seite.md"), []byte("# Tiefe Seite\nEnthält auch Käse.\n"), 0o644)
+	os.MkdirAll(filepath.Join(dir, "sub", "deep", "nested"), 0o755)
+	os.WriteFile(filepath.Join(dir, "README.md"), []byte("# Overview\nTest with umlauts: Käse and Müll.\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "sub", "deep", "nested", "page.md"), []byte("# Deep Page\nAlso contains Käse.\n"), 0o644)
 	return dir
 }
 
@@ -39,13 +39,13 @@ func TestSearchCaseInsensitive(t *testing.T) {
 
 func TestSearchDeepPath(t *testing.T) {
 	dir := setup(t)
-	results, err := Search(dir, "Tiefe Seite")
+	results, err := Search(dir, "Deep Page")
 	if err != nil {
 		t.Fatal(err)
 	}
 	found := false
 	for _, r := range results {
-		if r.Path == "unter/tief/verzeichnis/seite.md" {
+		if r.Path == "sub/deep/nested/page.md" {
 			found = true
 		}
 	}

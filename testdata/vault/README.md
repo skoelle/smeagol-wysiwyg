@@ -1,8 +1,7 @@
-# Willkommen im Test-Vault
+# Welcome to the Test Vault
 
-Dies ist ein Beispiel-Vault zum manuellen Ausprobieren von
-smeagol-wysiwyg. Klicke auf **Overview**, um alle Seiten zu sehen, oder
-nutze die Suche oben rechts.
+This is a sample vault for manually trying out smeagol-wysiwyg.
+Click **Overview** to see all pages, or use the search box in the top right.
 
-- [Unterseite im Ordner "notizen"](/page/notizen/README.md)
-- [Eine tiefer verschachtelte Seite](/page/notizen/technik/beispiel.md)
+- [Subpage in the "notes" folder](/page/notes/README.md)
+- [A deeply nested page](/page/notes/tech/example.md)
