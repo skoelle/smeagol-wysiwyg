@@ -142,7 +142,7 @@ async function enterEditMode() {
 
   try {
     const {
-      Editor, rootCtx, defaultValueCtx, commonmark, listener, listenerCtx,
+      Editor, rootCtx, defaultValueCtx, commandsCtx, commonmark, listener, listenerCtx,
       toggleStrongCommand, toggleEmphasisCommand, toggleInlineCodeCommand,
       wrapInBlockquoteCommand, createCodeBlockCommand,
       wrapInBulletListCommand, wrapInOrderedListCommand,
@@ -150,19 +150,27 @@ async function enterEditMode() {
       insertHrCommand, insertHardbreakCommand,
     } = await import(MILKDOWN_URL);
 
+    function dispatch(ed, cmd, arg) {
+      ed.action((ctx) => {
+        const commands = ctx.get(commandsCtx);
+        if (arg !== undefined) commands.call(cmd, arg);
+        else commands.call(cmd);
+      });
+    }
+
     const cmdMap = {
-      bold:         (ed) => ed.call(toggleStrongCommand),
-      italic:       (ed) => ed.call(toggleEmphasisCommand),
-      strikethrough:(ed) => ed.call(toggleEmphasisCommand),
-      inlinecode:   (ed) => ed.call(toggleInlineCodeCommand),
-      blockquote:   (ed) => ed.call(wrapInBlockquoteCommand),
-      codeblock:    (ed) => ed.call(createCodeBlockCommand),
-      bulletlist:   (ed) => ed.call(wrapInBulletListCommand),
-      orderedlist:  (ed) => ed.call(wrapInOrderedListCommand),
-      heading:      (ed) => ed.call(wrapInHeadingCommand, 1),
-      paragraph:    (ed) => ed.call(turnIntoTextCommand),
-      hr:           (ed) => ed.call(insertHrCommand),
-      hardbreak:    (ed) => ed.call(insertHardbreakCommand),
+      bold:         (ed) => dispatch(ed, toggleStrongCommand),
+      italic:       (ed) => dispatch(ed, toggleEmphasisCommand),
+      strikethrough:(ed) => dispatch(ed, toggleEmphasisCommand),
+      inlinecode:   (ed) => dispatch(ed, toggleInlineCodeCommand),
+      blockquote:   (ed) => dispatch(ed, wrapInBlockquoteCommand),
+      codeblock:    (ed) => dispatch(ed, createCodeBlockCommand),
+      bulletlist:   (ed) => dispatch(ed, wrapInBulletListCommand),
+      orderedlist:  (ed) => dispatch(ed, wrapInOrderedListCommand),
+      heading:      (ed) => dispatch(ed, wrapInHeadingCommand, 1),
+      paragraph:    (ed) => dispatch(ed, turnIntoTextCommand),
+      hr:           (ed) => dispatch(ed, insertHrCommand),
+      hardbreak:    (ed) => dispatch(ed, insertHardbreakCommand),
     };
 
     toolbar.querySelectorAll("button[data-cmd]").forEach((btn) => {
