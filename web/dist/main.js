@@ -142,35 +142,52 @@ async function enterEditMode() {
 
   try {
     const {
-      Editor, rootCtx, defaultValueCtx, commandsCtx, commonmark, listener, listenerCtx,
-      toggleStrongCommand, toggleEmphasisCommand, toggleInlineCodeCommand,
-      wrapInBlockquoteCommand, createCodeBlockCommand,
-      wrapInBulletListCommand, wrapInOrderedListCommand,
-      wrapInHeadingCommand, turnIntoTextCommand,
-      insertHrCommand, insertHardbreakCommand,
+      Editor, rootCtx, defaultValueCtx, editorViewCtx, commonmark, listener, listenerCtx,
+      toggleMark, wrapIn, setBlockType, lift, newlineInCode,
+      wrapInList,
     } = await import(MILKDOWN_URL);
 
-    function dispatch(ed, cmd, arg) {
+    function pmCommand(ed, fn, ...args) {
       ed.action((ctx) => {
-        const commands = ctx.get(commandsCtx);
-        if (arg !== undefined) commands.call(cmd, arg);
-        else commands.call(cmd);
+        const view = ctx.get(editorViewCtx);
+        const cmd = args.length ? fn(...args) : fn;
+        cmd(view.state, view.dispatch, view);
       });
     }
 
     const cmdMap = {
-      bold:         (ed) => dispatch(ed, toggleStrongCommand),
-      italic:       (ed) => dispatch(ed, toggleEmphasisCommand),
-      strikethrough:(ed) => dispatch(ed, toggleEmphasisCommand),
-      inlinecode:   (ed) => dispatch(ed, toggleInlineCodeCommand),
-      blockquote:   (ed) => dispatch(ed, wrapInBlockquoteCommand),
-      codeblock:    (ed) => dispatch(ed, createCodeBlockCommand),
-      bulletlist:   (ed) => dispatch(ed, wrapInBulletListCommand),
-      orderedlist:  (ed) => dispatch(ed, wrapInOrderedListCommand),
-      heading:      (ed) => dispatch(ed, wrapInHeadingCommand, 1),
-      paragraph:    (ed) => dispatch(ed, turnIntoTextCommand),
-      hr:           (ed) => dispatch(ed, insertHrCommand),
-      hardbreak:    (ed) => dispatch(ed, insertHardbreakCommand),
+      bold:         (ed) => pmCommand(ed, toggleMark, ed => ed.state.schema.marks.strong),
+      italic:       (ed) => pmCommand(ed, toggleMark, ed => ed.state.schema.marks.emphasis),
+      strikethrough:(ed) => pmCommand(ed, toggleMark, ed => ed.state.schema.marks.strike),
+      inlinecode:   (ed) => pmCommand(ed, toggleMark, ed => ed.state.schema.marks.code_inline),
+      blockquote:   (ed) => pmCommand(ed, wrapIn, ed => ed.state.schema.nodes.blockquote),
+      bulletlist:   (ed) => pmCommand(ed, wrapInList, ed => ed.state.schema.nodes.bullet_list),
+      orderedlist:  (ed) => pmCommand(ed, wrapInList, ed => ed.state.schema.nodes.ordered_list),
+      heading:      (ed) => pmCommand(ed, setBlockType, ed => ed.state.schema.nodes.heading, { level: 1 }),
+      paragraph:    (ed) => pmCommand(ed, setBlockType, ed => ed.state.schema.nodes.paragraph),
+      hr:           (ed) => {
+        ed.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          const { state, dispatch } = view;
+          const hr = state.schema.nodes.horizontal_rule.create();
+          dispatch(state.tr.replaceSelectionWith(hr));
+        });
+      },
+      hardbreak:    (ed) => {
+        ed.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          const { state, dispatch } = view;
+          dispatch(state.tr.replaceSelectionWith(state.schema.nodes.hard_break.create()));
+        });
+      },
+      codeblock:    (ed) => {
+        ed.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          const { state, dispatch } = view;
+          const node = state.schema.nodes.code_block.create();
+          dispatch(state.tr.replaceSelectionWith(node));
+        });
+      },
     };
 
     toolbar.querySelectorAll("button[data-cmd]").forEach((btn) => {
