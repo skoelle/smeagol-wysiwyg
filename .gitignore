@@ -1,0 +1,12 @@
+# Go build artefacts
+/smeagol-wysiwyg
+*.exe
+*.test
+*.out
+
+# Editor / OS noise
+.DS_Store
+*.swp
+
+# Local vault used only for ad-hoc manual testing.
+/local-vault/
