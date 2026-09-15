@@ -1,76 +1,48 @@
 # smeagol-wysiwyg
 
-Ein persoenliches Wiki nach dem Vorbild von [Smeagol](https://smeagol.dev)
-(AustinWise/smeagol), aber mit echtem WYSIWYG-Editor statt reinem
-Markdown-Editing. Laeuft als einzelnes Go-Binary, zeigt auf ein
-Verzeichnis mit Markdown-Dateien ("Vault") und dient dieses ueber eine
-Weboberflaeche aus.
+A personal wiki inspired by [Smeagol](https://smeagol.dev) (AustinWise/smeagol), but with a real WYSIWYG editor instead of raw Markdown editing. Runs as a single Go binary, points at a directory of Markdown files ("vault") and serves them through a web interface.
 
-Details zur Zielsetzung stehen in [SPEC.md](SPEC.md), der Umsetzungsplan
-in [PLAN.md](PLAN.md).
+Details on the design goals are in [SPEC.md](SPEC.md), the implementation plan in [PLAN.md](PLAN.md).
 
-## Eigenschaften
+## Features
 
-- Einzelnes Go-Binary, keine Datenbank, keine Laufzeitabhaengigkeiten.
-- Zeigt auf einen beliebigen Vault-Pfad mit Markdown-Dateien, inklusive
-  beliebig tiefer Unterverzeichnisse.
-- Start ruft `README.md` im Vault-Root auf, jedes Unterverzeichnis kann
-  eine eigene `README.md` als Index haben.
-- Overview-Button zeigt eine Baumansicht des gesamten Vaults, auch auf
-  mobilen Viewports erreichbar.
-- Volltextsuche ueber alle Markdown-Dateien (Dateiinhalt und Pfad), per
-  rekursivem Filesystem-Scan ohne persistenten Index.
-- Echter WYSIWYG-Editor ([Milkdown](https://milkdown.dev)) statt reinem
-  Markdown-Text-Editing, Inhalte bleiben beim Speichern valides Markdown.
-- Instant-Save: kein Speichern-Button, Aenderungen werden nach kurzer
-  Tippstopp-Pause automatisch gespeichert, mit sichtbarem Status
-  ("wird bearbeitet" / "speichert..." / "gespeichert" / "Fehler").
-- Live-Reload: aendert sich eine Datei extern (z. B. per `vim` direkt auf
-  dem Server), aktualisiert sich die geoeffnete Seite automatisch, mit
-  Konflikt-Hinweis statt stillem Ueberschreiben, falls gerade selbst
-  bearbeitet wird.
-- Kein Vorab-Scan beim Start: der Vault gilt als jederzeit extern
-  veraenderlich.
+- Single Go binary, no database, no runtime dependencies.
+- Points at any vault path with Markdown files, including arbitrarily deep subdirectories.
+- Starts by showing `README.md` in the vault root; each subdirectory can have its own `README.md` as an index page.
+- Overview button shows a tree view of the entire vault, accessible even on mobile viewports.
+- Full-text search across all Markdown files (content and path) via recursive filesystem scan with no persistent index.
+- Real WYSIWYG editor ([Milkdown](https://milkdown.dev)) instead of plain Markdown editing; content is saved as valid Markdown.
+- Instant save: no save button -- changes are saved automatically after a short typing pause, with visible status ("editing" / "saving..." / "saved" / "error").
+- Live reload: when a file changes externally (e.g. via `vim` on the server), the open page updates automatically with a conflict warning instead of silently overwriting if you are currently editing.
+- No upfront scan on startup: the vault is treated as externally mutable at all times.
+- Formatting toolbar with headings (h1/h2/h3), bold, italic, inline code, lists, blockquote, code block, horizontal rule and hard break.
+- Light mode UI.
 
-## Bauen
+## Build
 
-Voraussetzung: Go 1.22 oder neuer.
+Requires Go 1.22 or later.
 
-Vor dem ersten Build den Platzhalter `USERNAME` im Modul-Pfad ersetzen
-(in `go.mod` und in den Import-Zeilen von `main.go` und
-`internal/server/server.go`) durch den tatsaechlichen GitHub-Benutzernamen:
+Before the first build, replace the `USERNAME` placeholder in the module path (`go.mod`, `main.go`, `internal/server/server.go`) with your actual GitHub username:
 
 ```bash
-grep -rl "USERNAME" . | xargs sed -i 's/USERNAME/DEIN-GITHUB-NAME/g'
+grep -rl "USERNAME" . | xargs sed -i 's/USERNAME/YOUR-GITHUB-NAME/g'
 ```
 
-Dann bauen:
+Then build:
 
 ```bash
 go build -o smeagol-wysiwyg .
 ```
 
-Fuer das Zielsystem (linux/amd64) explizit cross-compilen:
+For a specific target (e.g. linux/amd64):
 
 ```bash
 GOOS=linux GOARCH=amd64 go build -o smeagol-wysiwyg .
 ```
 
-Die Frontend-Assets in `web/dist/` (HTML/CSS/JS) sind bereits im
-Repository enthalten und werden ueber `//go:embed web/dist` direkt ins
-Binary eingebettet (siehe `embed.go`). Es ist **kein** separater
-npm/Node-Build-Schritt notwendig, `go build` reicht aus.
+The frontend assets in `web/dist/` (HTML/CSS/JS) are already in the repository and embedded into the binary via `//go:embed web/dist` (see `embed.go`). No separate npm/Node build step is required -- `go build` is all you need.
 
-Der WYSIWYG-Editor selbst (Milkdown) wird im Browser erst beim Wechsel in
-den Bearbeitungsmodus per dynamischem ESM-Import von einem CDN geladen
-(siehe Kommentar am Kopf von `web/dist/main.js`). Das haelt dieses Repo
-frei von einer Node-Toolchain, bedeutet aber, dass fuer den ersten Aufruf
-des Editors (nicht fuer das reine Lesen von Seiten) einmalig eine
-Internetverbindung im Browser noetig ist; danach greift der
-Browser-Cache. Wer eine komplett offline-faehige Variante ab dem ersten
-Aufruf moechte, kann die Milkdown-ESM-Bundles lokal vendoren und die
-`MILKDOWN_CDN_*`-Konstanten am Kopf von `web/dist/main.js` auf lokale
-Pfade unter `web/dist/` umstellen.
+The WYSIWYG editor (Milkdown) is vendored into `web/dist/vendor/milkdown.js` and works fully offline. No internet connection is needed.
 
 ## Tests
 
@@ -78,54 +50,43 @@ Pfade unter `web/dist/` umstellen.
 go test ./...
 ```
 
-Testet unter anderem: Path-Traversal-Schutz im Vault-Layer, atomares
-Schreiben, Verzeichnisbaum-Aufbau und die Suche (inklusive Umlauten und
-tief verschachtelten Pfaden).
+Covers: path traversal protection in the vault layer, atomic writes, directory tree building and search (including umlauts and deeply nested paths).
 
-> Hinweis: Dieser Code wurde ohne lokalen Go-Compiler geschrieben und vor
-> der Auslieferung nicht selbst mit `go build`/`go test` verifiziert.
-> Bitte vor dem produktiven Einsatz einmal lokal durchlaufen lassen, siehe
-> PLAN.md, Abschnitt "Bekannte Einschraenkungen".
-
-## Ausfuehren
+## Usage
 
 ```bash
-./smeagol-wysiwyg --host 127.0.0.1 --port 8000 /pfad/zum/vault
+./smeagol-wysiwyg --host 127.0.0.1 --port 8000 /path/to/vault
 ```
 
-Ohne Pfad-Argument wird das aktuelle Arbeitsverzeichnis als Vault
-verwendet. Danach im Browser `http://127.0.0.1:8000` oeffnen. Ein
-Beispiel-Vault zum Ausprobieren liegt unter `testdata/vault/`:
+Without a path argument the current working directory is used as the vault. Then open `http://127.0.0.1:8000` in your browser. A sample vault to try out is in `testdata/vault/`:
 
 ```bash
 ./smeagol-wysiwyg testdata/vault
 ```
 
-## Projektstruktur
+## Project Structure
 
 ```
 .
-|-- main.go                  CLI-Einstiegspunkt
-|-- embed.go                 Bindet web/dist per go:embed ins Binary ein
+|-- main.go                  CLI entry point
+|-- embed.go                 Embeds web/dist into the binary via go:embed
 |-- internal/
-|   |-- vault/                Dateisystem-Layer (Lesen/Schreiben/Baum)
-|   |-- watcher/               fsnotify-Integration fuer Live-Reload
-|   |-- search/                Grep-artige Volltextsuche
-|   |-- render/                Markdown-zu-HTML-Rendering (goldmark)
-|   `-- server/                HTTP-Routen und Seiten-Template
-|-- web/dist/                 Statische Frontend-Assets (HTML/CSS/JS)
-|-- testdata/vault/            Beispiel-Vault fuer manuelle Tests
-|-- SPEC.md                    Vollstaendige Spezifikation
-`-- PLAN.md                    Umsetzungsplan (dieses Repo ist dessen Ergebnis)
+|   |-- vault/               Filesystem layer (read/write/tree)
+|   |-- watcher/             fsnotify integration for live reload
+|   |-- search/              Grep-style full-text search
+|   |-- render/              Markdown-to-HTML rendering (goldmark)
+|   `-- server/              HTTP routes and page template
+|-- web/dist/                Static frontend assets (HTML/CSS/JS)
+|-- web/dist/vendor/         Vendored Milkdown editor bundle
+|-- testdata/vault/          Example vault for manual testing
+|-- SPEC.md                  Full specification
+`-- PLAN.md                  Implementation plan
 ```
 
-## Nicht-Ziele
+## Non-Goals
 
-Siehe SPEC.md Abschnitt 4: keine Mehrbenutzerfaehigkeit, kein Login, kein
-oeffentliches Internet-Hosting, kein Bild-Upload, kein Git-Backend als
-Speicher-Engine (Versionierung des Vault-Ordners bleibt dem Nutzer selbst
-ueberlassen, z. B. per separatem `git add`/`git commit`).
+See SPEC.md section 4: no multi-user support, no login, no public internet hosting, no image upload, no Git backend as storage engine (versioning the vault folder is left to the user, e.g. via separate `git add`/`git commit`).
 
-## Lizenz
+## License
 
-MIT, siehe [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).
