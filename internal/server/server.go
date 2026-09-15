@@ -214,14 +214,15 @@ const pageHTML = `<!DOCTYPE html>
 
 <div id="editor-toolbar" class="editor-toolbar" hidden>
   <div class="toolbar-group">
-    <button data-cmd="heading" title="Ueberschrift (Ctrl+Shift+1)">H</button>
-    <button data-cmd="paragraph" title="Absatz (Ctrl+Shift+0)">P</button>
+    <button data-cmd="h1" title="Ueberschrift 1">=</button>
+    <button data-cmd="h2" title="Ueberschrift 2">==</button>
+    <button data-cmd="h3" title="Ueberschrift 3">===</button>
+    <button data-cmd="paragraph" title="Absatz">P</button>
   </div>
   <div class="toolbar-sep"></div>
   <div class="toolbar-group">
     <button data-cmd="bold" title="Fett (Ctrl+B)"><b>B</b></button>
     <button data-cmd="italic" title="Kursiv (Ctrl+I)"><i>I</i></button>
-    <button data-cmd="strikethrough" title="Durchgestrichen (Alt+Shift+5)"><s>S</s></button>
     <button data-cmd="inlinecode" title="Inline-Code (Ctrl+E)">&lt;/&gt;</button>
   </div>
   <div class="toolbar-sep"></div>

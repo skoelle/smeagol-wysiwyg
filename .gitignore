@@ -10,3 +10,8 @@
 
 # Local vault used only for ad-hoc manual testing.
 /local-vault/
+
+# Local scratch files
+/error.txt
+/TODO.md
+/web/vendor/node_modules/

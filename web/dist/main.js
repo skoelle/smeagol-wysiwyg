@@ -143,51 +143,31 @@ async function enterEditMode() {
   try {
     const {
       Editor, rootCtx, defaultValueCtx, editorViewCtx, commonmark, listener, listenerCtx,
-      toggleMark, wrapIn, setBlockType, lift, newlineInCode,
-      wrapInList,
+      toggleMark, wrapIn, setBlockType, wrapInList,
     } = await import(MILKDOWN_URL);
 
-    function pmCommand(ed, fn, ...args) {
+    function run(ed, build) {
       ed.action((ctx) => {
         const view = ctx.get(editorViewCtx);
-        const cmd = args.length ? fn(...args) : fn;
-        cmd(view.state, view.dispatch, view);
+        const cmd = build(view.state.schema);
+        if (cmd) cmd(view.state, view.dispatch, view);
       });
     }
 
     const cmdMap = {
-      bold:         (ed) => pmCommand(ed, toggleMark, ed => ed.state.schema.marks.strong),
-      italic:       (ed) => pmCommand(ed, toggleMark, ed => ed.state.schema.marks.emphasis),
-      strikethrough:(ed) => pmCommand(ed, toggleMark, ed => ed.state.schema.marks.strike),
-      inlinecode:   (ed) => pmCommand(ed, toggleMark, ed => ed.state.schema.marks.code_inline),
-      blockquote:   (ed) => pmCommand(ed, wrapIn, ed => ed.state.schema.nodes.blockquote),
-      bulletlist:   (ed) => pmCommand(ed, wrapInList, ed => ed.state.schema.nodes.bullet_list),
-      orderedlist:  (ed) => pmCommand(ed, wrapInList, ed => ed.state.schema.nodes.ordered_list),
-      heading:      (ed) => pmCommand(ed, setBlockType, ed => ed.state.schema.nodes.heading, { level: 1 }),
-      paragraph:    (ed) => pmCommand(ed, setBlockType, ed => ed.state.schema.nodes.paragraph),
-      hr:           (ed) => {
-        ed.action((ctx) => {
-          const view = ctx.get(editorViewCtx);
-          const { state, dispatch } = view;
-          const hr = state.schema.nodes.horizontal_rule.create();
-          dispatch(state.tr.replaceSelectionWith(hr));
-        });
-      },
-      hardbreak:    (ed) => {
-        ed.action((ctx) => {
-          const view = ctx.get(editorViewCtx);
-          const { state, dispatch } = view;
-          dispatch(state.tr.replaceSelectionWith(state.schema.nodes.hard_break.create()));
-        });
-      },
-      codeblock:    (ed) => {
-        ed.action((ctx) => {
-          const view = ctx.get(editorViewCtx);
-          const { state, dispatch } = view;
-          const node = state.schema.nodes.code_block.create();
-          dispatch(state.tr.replaceSelectionWith(node));
-        });
-      },
+      bold:         (ed) => run(ed, (s) => toggleMark(s.marks.strong)),
+      italic:       (ed) => run(ed, (s) => toggleMark(s.marks.emphasis)),
+      inlinecode:   (ed) => run(ed, (s) => toggleMark(s.marks.inlineCode)),
+      blockquote:   (ed) => run(ed, (s) => wrapIn(s.nodes.blockquote)),
+      bulletlist:   (ed) => run(ed, (s) => wrapInList(s.nodes.bullet_list)),
+      orderedlist:  (ed) => run(ed, (s) => wrapInList(s.nodes.ordered_list)),
+      h1:           (ed) => run(ed, (s) => setBlockType(s.nodes.heading, { level: 1 })),
+      h2:           (ed) => run(ed, (s) => setBlockType(s.nodes.heading, { level: 2 })),
+      h3:           (ed) => run(ed, (s) => setBlockType(s.nodes.heading, { level: 3 })),
+      paragraph:    (ed) => run(ed, (s) => setBlockType(s.nodes.paragraph)),
+      codeblock:    (ed) => run(ed, (s) => setBlockType(s.nodes.code_block)),
+      hr:           (ed) => run(ed, (s) => (state, dispatch) => dispatch(state.tr.replaceSelectionWith(s.nodes.hr.create()))),
+      hardbreak:    (ed) => run(ed, (s) => (state, dispatch) => dispatch(state.tr.replaceSelectionWith(s.nodes.hardbreak.create()))),
     };
 
     toolbar.querySelectorAll("button[data-cmd]").forEach((btn) => {

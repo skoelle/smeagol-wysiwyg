@@ -107,12 +107,24 @@ main#content th, main#content td { border: 1px solid var(--color-border); paddin
 main#content a { color: var(--color-accent); }
 
 .editor-mount {
+  margin-top: 0;
   border: 1px solid var(--color-border);
   border-top: none;
   border-radius: 0 0 var(--radius) var(--radius);
   padding: 1rem;
   background: #fff;
 }
+
+.editor-mount .ProseMirror,
+.editor-mount .milkdown,
+.editor-mount [contenteditable="true"] {
+  outline: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.editor-mount .ProseMirror:focus,
+.editor-mount .milkdown:focus,
+.editor-mount [contenteditable="true"]:focus { outline: none; box-shadow: none; }
 
 .editor-toolbar {
   max-width: 780px;
