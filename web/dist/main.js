@@ -5,18 +5,10 @@
 // shell (see internal/server/server.go).
 //
 // The WYSIWYG editor itself is Milkdown, loaded on demand (only once the
-// user actually switches into edit mode) via dynamic ESM import from a
-// CDN. This keeps the Go binary and this repository free of a Node/npm
-// build step while still giving a real WYSIWYG editing experience. The
-// import is cached by the browser after the first load.
-//
-// For a fully offline-from-first-request setup, vendor the Milkdown ESM
-// bundles into web/dist yourself and change MILKDOWN_CDN_* below to
-// local paths.
+// user actually switches into edit mode) from the local vendor bundle
+// at /assets/vendor/milkdown.js (no internet connection required).
 
-const MILKDOWN_CDN_CORE = "https://esm.sh/@milkdown/core@7.3.6";
-const MILKDOWN_CDN_PRESET_COMMONMARK = "https://esm.sh/@milkdown/preset-commonmark@7.3.6";
-const MILKDOWN_CDN_PLUGIN_LISTENER = "https://esm.sh/@milkdown/plugin-listener@7.3.6";
+const MILKDOWN_URL = "/assets/vendor/milkdown.js";
 
 const state = {
   path: "",
@@ -147,15 +139,15 @@ async function enterEditMode() {
   setSaveState("saved", "Bereit");
 
   try {
-    const { Editor, rootCtx, defaultValueCtx } = await import(MILKDOWN_CDN_CORE);
-    const { commonmark } = await import(MILKDOWN_CDN_PRESET_COMMONMARK);
-    const { listener, listenerCtx } = await import(MILKDOWN_CDN_PLUGIN_LISTENER);
+    const { Editor, rootCtx, defaultValueCtx, commonmark, listener, listenerCtx } = await import(MILKDOWN_URL);
 
     const editor = await Editor.make()
       .config((ctx) => {
         ctx.set(rootCtx, mount);
         ctx.set(defaultValueCtx, raw);
       })
+      .use(commonmark)
+      .use(listener)
       .config((ctx) => {
         const l = ctx.get(listenerCtx);
         l.markdownUpdated((_ctx, markdown, prevMarkdown) => {
@@ -164,8 +156,6 @@ async function enterEditMode() {
           }
         });
       })
-      .use(commonmark)
-      .use(listener)
       .create();
 
     state.milkdownEditor = editor;

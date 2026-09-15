@@ -5,187 +5,187 @@
 package server
 
 import (
-\t"encoding/json"
-\t"fmt"
-\t"html/template"
-\t"io/fs"
-\t"log"
-\t"net/http"
-\t"path/filepath"
-\t"strings"
-\t"time"
+	"encoding/json"
+	"fmt"
+	"html/template"
+	"io/fs"
+	"log"
+	"net/http"
+	"path/filepath"
+	"strings"
+	"time"
 
-\t"github.com/USERNAME/smeagol-wysiwyg/internal/render"
-\t"github.com/USERNAME/smeagol-wysiwyg/internal/search"
-\t"github.com/USERNAME/smeagol-wysiwyg/internal/vault"
-\t"github.com/USERNAME/smeagol-wysiwyg/internal/watcher"
+	"github.com/USERNAME/smeagol-wysiwyg/internal/render"
+	"github.com/USERNAME/smeagol-wysiwyg/internal/search"
+	"github.com/USERNAME/smeagol-wysiwyg/internal/vault"
+	"github.com/USERNAME/smeagol-wysiwyg/internal/watcher"
 )
 
 type Server struct {
-\tVault   *vault.Vault
-\tWatcher *watcher.Watcher
-\tAssets  fs.FS
-\tmux     *http.ServeMux
+	Vault   *vault.Vault
+	Watcher *watcher.Watcher
+	Assets  fs.FS
+	mux     *http.ServeMux
 }
 
 func New(v *vault.Vault, w *watcher.Watcher, assets fs.FS) *Server {
-\ts := &Server{Vault: v, Watcher: w, Assets: assets, mux: http.NewServeMux()}
-\ts.routes()
-\treturn s
+	s := &Server{Vault: v, Watcher: w, Assets: assets, mux: http.NewServeMux()}
+	s.routes()
+	return s
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-\ts.mux.ServeHTTP(w, r)
+	s.mux.ServeHTTP(w, r)
 }
 
 func (s *Server) routes() {
-\ts.mux.Handle("GET /assets/", http.StripPrefix("/assets/", http.FileServerFS(s.Assets)))
+	s.mux.Handle("GET /assets/", http.StripPrefix("/assets/", http.FileServerFS(s.Assets)))
 
-\ts.mux.HandleFunc("GET /{$}", s.handlePage)
-\ts.mux.HandleFunc("GET /page/{path...}", s.handlePage)
+	s.mux.HandleFunc("GET /{$}", s.handlePage)
+	s.mux.HandleFunc("GET /page/{path...}", s.handlePage)
 
-\ts.mux.HandleFunc("GET /api/tree", s.handleTree)
-\ts.mux.HandleFunc("GET /api/search", s.handleSearch)
-\ts.mux.HandleFunc("GET /api/raw/{path...}", s.handleGetRaw)
-\ts.mux.HandleFunc("PUT /api/raw/{path...}", s.handlePutRaw)
-\ts.mux.HandleFunc("GET /api/events", s.handleEvents)
+	s.mux.HandleFunc("GET /api/tree", s.handleTree)
+	s.mux.HandleFunc("GET /api/search", s.handleSearch)
+	s.mux.HandleFunc("GET /api/raw/{path...}", s.handleGetRaw)
+	s.mux.HandleFunc("PUT /api/raw/{path...}", s.handlePutRaw)
+	s.mux.HandleFunc("GET /api/events", s.handleEvents)
 }
 
 var pageTmpl = template.Must(template.New("page").Parse(pageHTML))
 
 type pageData struct {
-\tTitle       string
-\tPathForJS   string
-\tContentHTML template.HTML
-\tExists      bool
+	Title       string
+	PathForJS   string
+	ContentHTML template.HTML
+	Exists      bool
 }
 
 func (s *Server) handlePage(w http.ResponseWriter, r *http.Request) {
-\treqPath := r.PathValue("path")
-\tif reqPath == "" {
-\t\treqPath = "README.md"
-\t}
-\tif !strings.HasSuffix(strings.ToLower(reqPath), ".md") {
-\t\treqPath = strings.TrimSuffix(reqPath, "/") + "/README.md"
-\t}
+	reqPath := r.PathValue("path")
+	if reqPath == "" {
+		reqPath = "README.md"
+	}
+	if !strings.HasSuffix(strings.ToLower(reqPath), ".md") {
+		reqPath = strings.TrimSuffix(reqPath, "/") + "/README.md"
+	}
 
-\tdata := pageData{PathForJS: reqPath}
+	data := pageData{PathForJS: reqPath}
 
-\tcontent, err := s.Vault.ReadFile(reqPath)
-\tif err != nil {
-\t\tdata.Exists = false
-\t\tdata.Title = "Nicht gefunden"
-\t\tdata.ContentHTML = template.HTML(`<p class="empty-state">Diese Seite existiert noch nicht. Wechsle in den Bearbeitungsmodus, um sie anzulegen.</p>`)
-\t\tw.WriteHeader(http.StatusOK)
-\t} else {
-\t\tdata.Exists = true
-\t\thtmlContent, rerr := render.ToHTML(content)
-\t\tif rerr != nil {
-\t\t\thttp.Error(w, "Fehler beim Rendern: "+rerr.Error(), http.StatusInternalServerError)
-\t\t\treturn
-\t\t}
-\t\tdata.ContentHTML = template.HTML(htmlContent)
-\t\tdata.Title = filepath.Base(reqPath)
-\t}
+	content, err := s.Vault.ReadFile(reqPath)
+	if err != nil {
+		data.Exists = false
+		data.Title = "Nicht gefunden"
+		data.ContentHTML = template.HTML(`<p class="empty-state">Diese Seite existiert noch nicht. Wechsle in den Bearbeitungsmodus, um sie anzulegen.</p>`)
+		w.WriteHeader(http.StatusOK)
+	} else {
+		data.Exists = true
+		htmlContent, rerr := render.ToHTML(content)
+		if rerr != nil {
+			http.Error(w, "Fehler beim Rendern: "+rerr.Error(), http.StatusInternalServerError)
+			return
+		}
+		data.ContentHTML = template.HTML(htmlContent)
+		data.Title = filepath.Base(reqPath)
+	}
 
-\tw.Header().Set("Content-Type", "text/html; charset=utf-8")
-\tif err := pageTmpl.Execute(w, data); err != nil {
-\t\tlog.Printf("server: template error: %v", err)
-\t}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := pageTmpl.Execute(w, data); err != nil {
+		log.Printf("server: template error: %v", err)
+	}
 }
 
 func (s *Server) handleTree(w http.ResponseWriter, r *http.Request) {
-\ttree, err := s.Vault.Tree()
-\tif err != nil {
-\t\thttp.Error(w, err.Error(), http.StatusInternalServerError)
-\t\treturn
-\t}
-\twriteJSON(w, tree)
+	tree, err := s.Vault.Tree()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, tree)
 }
 
 func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
-\tq := r.URL.Query().Get("q")
-\tresults, err := search.Search(s.Vault.Root, q)
-\tif err != nil {
-\t\thttp.Error(w, err.Error(), http.StatusInternalServerError)
-\t\treturn
-\t}
-\twriteJSON(w, results)
+	q := r.URL.Query().Get("q")
+	results, err := search.Search(s.Vault.Root, q)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, results)
 }
 
 func (s *Server) handleGetRaw(w http.ResponseWriter, r *http.Request) {
-\treqPath := r.PathValue("path")
-\tcontent, err := s.Vault.ReadFile(reqPath)
-\tif err != nil {
-\t\tw.Header().Set("Content-Type", "text/plain; charset=utf-8")
-\t\tw.WriteHeader(http.StatusOK)
-\t\treturn
-\t}
-\tw.Header().Set("Content-Type", "text/plain; charset=utf-8")
-\tw.Write(content)
+	reqPath := r.PathValue("path")
+	content, err := s.Vault.ReadFile(reqPath)
+	if err != nil {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Write(content)
 }
 
 func (s *Server) handlePutRaw(w http.ResponseWriter, r *http.Request) {
-\treqPath := r.PathValue("path")
-\tdefer r.Body.Close()
-\tbuf := make([]byte, 0, 8192)
-\ttmp := make([]byte, 8192)
-\tfor {
-\t\tn, err := r.Body.Read(tmp)
-\t\tif n > 0 {
-\t\t\tbuf = append(buf, tmp[:n]...)
-\t\t}
-\t\tif err != nil {
-\t\t\tbreak
-\t\t}
-\t}
-\tif err := s.Vault.WriteFileAtomic(reqPath, buf); err != nil {
-\t\thttp.Error(w, err.Error(), http.StatusInternalServerError)
-\t\treturn
-\t}
-\twriteJSON(w, map[string]any{
-\t\t"ok":   true,
-\t\t"path": reqPath,
-\t\t"time": time.Now().Format(time.RFC3339),
-\t})
+	reqPath := r.PathValue("path")
+	defer r.Body.Close()
+	buf := make([]byte, 0, 8192)
+	tmp := make([]byte, 8192)
+	for {
+		n, err := r.Body.Read(tmp)
+		if n > 0 {
+			buf = append(buf, tmp[:n]...)
+		}
+		if err != nil {
+			break
+		}
+	}
+	if err := s.Vault.WriteFileAtomic(reqPath, buf); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, map[string]any{
+		"ok":   true,
+		"path": reqPath,
+		"time": time.Now().Format(time.RFC3339),
+	})
 }
 
 func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
-\tflusher, ok := w.(http.Flusher)
-\tif !ok {
-\t\thttp.Error(w, "streaming not supported", http.StatusInternalServerError)
-\t\treturn
-\t}
-\tw.Header().Set("Content-Type", "text/event-stream")
-\tw.Header().Set("Cache-Control", "no-cache")
-\tw.Header().Set("Connection", "keep-alive")
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "streaming not supported", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
 
-\tch, unsubscribe := s.Watcher.Subscribe()
-\tdefer unsubscribe()
+	ch, unsubscribe := s.Watcher.Subscribe()
+	defer unsubscribe()
 
-\tfmt.Fprintf(w, ": connected\n\n")
-\tflusher.Flush()
+	fmt.Fprintf(w, ": connected\n\n")
+	flusher.Flush()
 
-\tfor {
-\t\tselect {
-\t\tcase ev, ok := <-ch:
-\t\t\tif !ok {
-\t\t\t\treturn
-\t\t\t}
-\t\t\tpayload, _ := json.Marshal(ev)
-\t\t\tfmt.Fprintf(w, "data: %s\n\n", payload)
-\t\t\tflusher.Flush()
-\t\tcase <-r.Context().Done():
-\t\t\treturn
-\t\t}
-\t}
+	for {
+		select {
+		case ev, ok := <-ch:
+			if !ok {
+				return
+			}
+			payload, _ := json.Marshal(ev)
+			fmt.Fprintf(w, "data: %s\n\n", payload)
+			flusher.Flush()
+		case <-r.Context().Done():
+			return
+		}
+	}
 }
 
 func writeJSON(w http.ResponseWriter, v any) {
-\tw.Header().Set("Content-Type", "application/json; charset=utf-8")
-\tenc := json.NewEncoder(w)
-\tenc.SetEscapeHTML(false)
-\t_ = enc.Encode(v)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+	_ = enc.Encode(v)
 }
 
 const pageHTML = `<!DOCTYPE html>

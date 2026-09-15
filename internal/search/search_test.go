@@ -1,66 +1,66 @@
 package search
 
 import (
-\t"os"
-\t"path/filepath"
-\t"testing"
+	"os"
+	"path/filepath"
+	"testing"
 )
 
 func setup(t *testing.T) string {
-\tt.Helper()
-\tdir := t.TempDir()
-\tos.MkdirAll(filepath.Join(dir, "unter", "tief", "verzeichnis"), 0o755)
-\tos.WriteFile(filepath.Join(dir, "README.md"), []byte("# Übersicht\nDies ist ein Test mit Umlaut: Käse und Müll.\n"), 0o644)
-\tos.WriteFile(filepath.Join(dir, "unter", "tief", "verzeichnis", "seite.md"), []byte("# Tiefe Seite\nEnthält auch Käse.\n"), 0o644)
-\treturn dir
+	t.Helper()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, "unter", "tief", "verzeichnis"), 0o755)
+	os.WriteFile(filepath.Join(dir, "README.md"), []byte("# Übersicht\nDies ist ein Test mit Umlaut: Käse und Müll.\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "unter", "tief", "verzeichnis", "seite.md"), []byte("# Tiefe Seite\nEnthält auch Käse.\n"), 0o644)
+	return dir
 }
 
 func TestSearchFindsUmlautContent(t *testing.T) {
-\tdir := setup(t)
-\tresults, err := Search(dir, "Käse")
-\tif err != nil {
-\t\tt.Fatal(err)
-\t}
-\tif len(results) != 2 {
-\t\tt.Fatalf("expected 2 hits, got %d: %+v", len(results), results)
-\t}
+	dir := setup(t)
+	results, err := Search(dir, "Käse")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("expected 2 hits, got %d: %+v", len(results), results)
+	}
 }
 
 func TestSearchCaseInsensitive(t *testing.T) {
-\tdir := setup(t)
-\tresults, err := Search(dir, "käse")
-\tif err != nil {
-\t\tt.Fatal(err)
-\t}
-\tif len(results) != 2 {
-\t\tt.Fatalf("expected 2 hits (case-insensitive), got %d", len(results))
-\t}
+	dir := setup(t)
+	results, err := Search(dir, "käse")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("expected 2 hits (case-insensitive), got %d", len(results))
+	}
 }
 
 func TestSearchDeepPath(t *testing.T) {
-\tdir := setup(t)
-\tresults, err := Search(dir, "Tiefe Seite")
-\tif err != nil {
-\t\tt.Fatal(err)
-\t}
-\tfound := false
-\tfor _, r := range results {
-\t\tif r.Path == "unter/tief/verzeichnis/seite.md" {
-\t\t\tfound = true
-\t\t}
-\t}
-\tif !found {
-\t\tt.Fatalf("expected hit in deeply nested path, got %+v", results)
-\t}
+	dir := setup(t)
+	results, err := Search(dir, "Tiefe Seite")
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, r := range results {
+		if r.Path == "unter/tief/verzeichnis/seite.md" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected hit in deeply nested path, got %+v", results)
+	}
 }
 
 func TestSearchEmptyQuery(t *testing.T) {
-\tdir := setup(t)
-\tresults, err := Search(dir, "")
-\tif err != nil {
-\t\tt.Fatal(err)
-\t}
-\tif results != nil {
-\t\tt.Fatalf("expected no results for empty query, got %+v", results)
-\t}
+	dir := setup(t)
+	results, err := Search(dir, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if results != nil {
+		t.Fatalf("expected no results for empty query, got %+v", results)
+	}
 }

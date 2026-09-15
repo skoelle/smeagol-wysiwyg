@@ -1,15 +1,15 @@
 /* smeagol-wysiwyg frontend styles */
 
 :root {
-  --color-bg: #0f1115;
-  --color-bg-panel: #171a21;
-  --color-border: #2a2e37;
-  --color-text: #e6e8eb;
-  --color-text-dim: #9aa1ab;
-  --color-accent: #5b8cff;
-  --color-ok: #4caf7d;
-  --color-warn: #e0a940;
-  --color-error: #e05555;
+  --color-bg: #ffffff;
+  --color-bg-panel: #f5f6f8;
+  --color-border: #d1d5db;
+  --color-text: #1f2937;
+  --color-text-dim: #6b7280;
+  --color-accent: #2563eb;
+  --color-ok: #16a34a;
+  --color-warn: #d97706;
+  --color-error: #dc2626;
   --radius: 6px;
 }
 
@@ -105,6 +105,13 @@ main#content code { background: var(--color-bg-panel); padding: 0.1rem 0.3rem; b
 main#content table { border-collapse: collapse; width: 100%; }
 main#content th, main#content td { border: 1px solid var(--color-border); padding: 0.4rem 0.6rem; }
 main#content a { color: var(--color-accent); }
+
+.editor-mount {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  background: #fff;
+}
 
 .empty-state { color: var(--color-text-dim); font-style: italic; }
 

@@ -1,8 +1,8 @@
 package main
 
 import (
-\t"embed"
-\t"io/fs"
+	"embed"
+	"io/fs"
 )
 
 // web/dist contains the frontend assets served under /assets/: the
@@ -14,5 +14,5 @@ import (
 var embeddedAssets embed.FS
 
 func assetsFS() (fs.FS, error) {
-\treturn fs.Sub(embeddedAssets, "web/dist")
+	return fs.Sub(embeddedAssets, "web/dist")
 }

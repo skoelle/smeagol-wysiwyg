@@ -9,153 +9,153 @@
 package vault
 
 import (
-\t"errors"
-\t"fmt"
-\t"os"
-\t"path/filepath"
-\t"sort"
-\t"strings"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
 )
 
 var ErrOutsideVault = errors.New("vault: path escapes vault root")
 
 type Vault struct {
-\tRoot string
+	Root string
 }
 
 func New(root string) (*Vault, error) {
-\tabs, err := filepath.Abs(root)
-\tif err != nil {
-\t\treturn nil, fmt.Errorf("vault: resolving root: %w", err)
-\t}
-\tinfo, err := os.Stat(abs)
-\tif err != nil {
-\t\treturn nil, fmt.Errorf("vault: stat root: %w", err)
-\t}
-\tif !info.IsDir() {
-\t\treturn nil, fmt.Errorf("vault: root %q is not a directory", abs)
-\t}
-\treturn &Vault{Root: abs}, nil
+	abs, err := filepath.Abs(root)
+	if err != nil {
+		return nil, fmt.Errorf("vault: resolving root: %w", err)
+	}
+	info, err := os.Stat(abs)
+	if err != nil {
+		return nil, fmt.Errorf("vault: stat root: %w", err)
+	}
+	if !info.IsDir() {
+		return nil, fmt.Errorf("vault: root %q is not a directory", abs)
+	}
+	return &Vault{Root: abs}, nil
 }
 
 func (v *Vault) Resolve(reqPath string) (string, error) {
-\tcleaned := filepath.Clean("/" + strings.TrimPrefix(reqPath, "/"))
-\tfull := filepath.Join(v.Root, cleaned)
+	cleaned := filepath.Clean("/" + strings.TrimPrefix(reqPath, "/"))
+	full := filepath.Join(v.Root, cleaned)
 
-\trootWithSep := v.Root
-\tif !strings.HasSuffix(rootWithSep, string(os.PathSeparator)) {
-\t\trootWithSep += string(os.PathSeparator)
-\t}
-\tif full != v.Root && !strings.HasPrefix(full, rootWithSep) {
-\t\treturn "", ErrOutsideVault
-\t}
-\treturn full, nil
+	rootWithSep := v.Root
+	if !strings.HasSuffix(rootWithSep, string(os.PathSeparator)) {
+		rootWithSep += string(os.PathSeparator)
+	}
+	if full != v.Root && !strings.HasPrefix(full, rootWithSep) {
+		return "", ErrOutsideVault
+	}
+	return full, nil
 }
 
 func (v *Vault) ReadFile(reqPath string) ([]byte, error) {
-\tfull, err := v.Resolve(reqPath)
-\tif err != nil {
-\t\treturn nil, err
-\t}
-\treturn os.ReadFile(full)
+	full, err := v.Resolve(reqPath)
+	if err != nil {
+		return nil, err
+	}
+	return os.ReadFile(full)
 }
 
 func (v *Vault) WriteFileAtomic(reqPath string, content []byte) error {
-\tfull, err := v.Resolve(reqPath)
-\tif err != nil {
-\t\treturn err
-\t}
-\tdir := filepath.Dir(full)
-\tif err := os.MkdirAll(dir, 0o755); err != nil {
-\t\treturn fmt.Errorf("vault: creating parent dir: %w", err)
-\t}
+	full, err := v.Resolve(reqPath)
+	if err != nil {
+		return err
+	}
+	dir := filepath.Dir(full)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("vault: creating parent dir: %w", err)
+	}
 
-\ttmp, err := os.CreateTemp(dir, ".smeagol-tmp-*")
-\tif err != nil {
-\t\treturn fmt.Errorf("vault: creating temp file: %w", err)
-\t}
-\ttmpName := tmp.Name()
-\tdefer func() {
-\t\t_ = os.Remove(tmpName)
-\t}()
+	tmp, err := os.CreateTemp(dir, ".smeagol-tmp-*")
+	if err != nil {
+		return fmt.Errorf("vault: creating temp file: %w", err)
+	}
+	tmpName := tmp.Name()
+	defer func() {
+		_ = os.Remove(tmpName)
+	}()
 
-\tif _, err := tmp.Write(content); err != nil {
-\t\ttmp.Close()
-\t\treturn fmt.Errorf("vault: writing temp file: %w", err)
-\t}
-\tif err := tmp.Sync(); err != nil {
-\t\ttmp.Close()
-\t\treturn fmt.Errorf("vault: syncing temp file: %w", err)
-\t}
-\tif err := tmp.Close(); err != nil {
-\t\treturn fmt.Errorf("vault: closing temp file: %w", err)
-\t}
+	if _, err := tmp.Write(content); err != nil {
+		tmp.Close()
+		return fmt.Errorf("vault: writing temp file: %w", err)
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return fmt.Errorf("vault: syncing temp file: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("vault: closing temp file: %w", err)
+	}
 
-\tif info, statErr := os.Stat(full); statErr == nil {
-\t\t_ = os.Chmod(tmpName, info.Mode())
-\t}
+	if info, statErr := os.Stat(full); statErr == nil {
+		_ = os.Chmod(tmpName, info.Mode())
+	}
 
-\tif err := os.Rename(tmpName, full); err != nil {
-\t\treturn fmt.Errorf("vault: renaming into place: %w", err)
-\t}
-\treturn nil
+	if err := os.Rename(tmpName, full); err != nil {
+		return fmt.Errorf("vault: renaming into place: %w", err)
+	}
+	return nil
 }
 
 type Node struct {
-\tName     string  `json:"name"`
-\tPath     string  `json:"path"`
-\tIsDir    bool    `json:"isDir"`
-\tChildren []*Node `json:"children,omitempty"`
+	Name     string  `json:"name"`
+	Path     string  `json:"path"`
+	IsDir    bool    `json:"isDir"`
+	Children []*Node `json:"children,omitempty"`
 }
 
 func (v *Vault) Tree() (*Node, error) {
-\troot := &Node{Name: filepath.Base(v.Root), Path: "", IsDir: true}
-\tif err := walkDir(v.Root, v.Root, root); err != nil {
-\t\treturn nil, err
-\t}
-\treturn root, nil
+	root := &Node{Name: filepath.Base(v.Root), Path: "", IsDir: true}
+	if err := walkDir(v.Root, v.Root, root); err != nil {
+		return nil, err
+	}
+	return root, nil
 }
 
 func walkDir(root, dir string, node *Node) error {
-\tentries, err := os.ReadDir(dir)
-\tif err != nil {
-\t\treturn err
-\t}
-\tsort.Slice(entries, func(i, j int) bool {
-\t\treturn entries[i].Name() < entries[j].Name()
-\t})
-\tfor _, e := range entries {
-\t\tname := e.Name()
-\t\tif strings.HasPrefix(name, ".") {
-\t\t\tcontinue
-\t\t}
-\t\tfull := filepath.Join(dir, name)
-\t\trel, err := filepath.Rel(root, full)
-\t\tif err != nil {
-\t\t\treturn err
-\t\t}
-\t\trel = filepath.ToSlash(rel)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Name() < entries[j].Name()
+	})
+	for _, e := range entries {
+		name := e.Name()
+		if strings.HasPrefix(name, ".") {
+			continue
+		}
+		full := filepath.Join(dir, name)
+		rel, err := filepath.Rel(root, full)
+		if err != nil {
+			return err
+		}
+		rel = filepath.ToSlash(rel)
 
-\t\tif e.IsDir() {
-\t\t\tchild := &Node{Name: name, Path: rel, IsDir: true}
-\t\t\tif err := walkDir(root, full, child); err != nil {
-\t\t\t\treturn err
-\t\t\t}
-\t\t\tnode.Children = append(node.Children, child)
-\t\t\tcontinue
-\t\t}
-\t\tif strings.EqualFold(filepath.Ext(name), ".md") {
-\t\t\tnode.Children = append(node.Children, &Node{Name: name, Path: rel, IsDir: false})
-\t\t}
-\t}
-\treturn nil
+		if e.IsDir() {
+			child := &Node{Name: name, Path: rel, IsDir: true}
+			if err := walkDir(root, full, child); err != nil {
+				return err
+			}
+			node.Children = append(node.Children, child)
+			continue
+		}
+		if strings.EqualFold(filepath.Ext(name), ".md") {
+			node.Children = append(node.Children, &Node{Name: name, Path: rel, IsDir: false})
+		}
+	}
+	return nil
 }
 
 func (v *Vault) Exists(reqPath string) bool {
-\tfull, err := v.Resolve(reqPath)
-\tif err != nil {
-\t\treturn false
-\t}
-\tinfo, err := os.Stat(full)
-\treturn err == nil && !info.IsDir()
+	full, err := v.Resolve(reqPath)
+	if err != nil {
+		return false
+	}
+	info, err := os.Stat(full)
+	return err == nil && !info.IsDir()
 }

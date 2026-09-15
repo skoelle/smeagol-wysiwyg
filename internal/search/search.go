@@ -4,95 +4,95 @@
 package search
 
 import (
-\t"bufio"
-\t"os"
-\t"path/filepath"
-\t"sort"
-\t"strings"
+	"bufio"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
 )
 
 type Result struct {
-\tPath    string `json:"path"`
-\tTitle   string `json:"title"`
-\tLine    int    `json:"line"`
-\tSnippet string `json:"snippet"`
+	Path    string `json:"path"`
+	Title   string `json:"title"`
+	Line    int    `json:"line"`
+	Snippet string `json:"snippet"`
 }
 
 func Search(root, query string) ([]Result, error) {
-\tquery = strings.TrimSpace(query)
-\tif query == "" {
-\t\treturn nil, nil
-\t}
-\tneedle := strings.ToLower(query)
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return nil, nil
+	}
+	needle := strings.ToLower(query)
 
-\tvar results []Result
-\terr := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
-\t\tif err != nil {
-\t\t\treturn nil
-\t\t}
-\t\tif d.IsDir() {
-\t\t\tif strings.HasPrefix(d.Name(), ".") && path != root {
-\t\t\t\treturn filepath.SkipDir
-\t\t\t}
-\t\t\treturn nil
-\t\t}
-\t\tif !strings.EqualFold(filepath.Ext(d.Name()), ".md") {
-\t\t\treturn nil
-\t\t}
+	var results []Result
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if d.IsDir() {
+			if strings.HasPrefix(d.Name(), ".") && path != root {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.EqualFold(filepath.Ext(d.Name()), ".md") {
+			return nil
+		}
 
-\t\trel, err := filepath.Rel(root, path)
-\t\tif err != nil {
-\t\t\treturn nil
-\t\t}
-\t\trel = filepath.ToSlash(rel)
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return nil
+		}
+		rel = filepath.ToSlash(rel)
 
-\t\tfileHit := strings.Contains(strings.ToLower(rel), needle)
+		fileHit := strings.Contains(strings.ToLower(rel), needle)
 
-\t\tf, err := os.Open(path)
-\t\tif err != nil {
-\t\t\treturn nil
-\t\t}
-\t\tdefer f.Close()
+		f, err := os.Open(path)
+		if err != nil {
+			return nil
+		}
+		defer f.Close()
 
-\t\ttitle := d.Name()
-\t\tscanner := bufio.NewScanner(f)
-\t\tlineNo := 0
-\t\tmatchedAny := false
-\t\tfor scanner.Scan() {
-\t\t\tlineNo++
-\t\t\tline := scanner.Text()
-\t\t\tif title == d.Name() && strings.HasPrefix(strings.TrimSpace(line), "# ") {
-\t\t\t\ttitle = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "# "))
-\t\t\t}
-\t\t\tif strings.Contains(strings.ToLower(line), needle) {
-\t\t\t\tmatchedAny = true
-\t\t\t\tresults = append(results, Result{
-\t\t\t\t\tPath:    rel,
-\t\t\t\t\tTitle:   title,
-\t\t\t\t\tLine:    lineNo,
-\t\t\t\t\tSnippet: strings.TrimSpace(line),
-\t\t\t\t})
-\t\t\t}
-\t\t}
-\t\tif fileHit && !matchedAny {
-\t\t\tresults = append(results, Result{
-\t\t\t\tPath:    rel,
-\t\t\t\tTitle:   title,
-\t\t\t\tLine:    0,
-\t\t\t\tSnippet: "(Treffer im Dateinamen/Pfad)",
-\t\t\t})
-\t\t}
-\t\treturn nil
-\t})
-\tif err != nil {
-\t\treturn nil, err
-\t}
+		title := d.Name()
+		scanner := bufio.NewScanner(f)
+		lineNo := 0
+		matchedAny := false
+		for scanner.Scan() {
+			lineNo++
+			line := scanner.Text()
+			if title == d.Name() && strings.HasPrefix(strings.TrimSpace(line), "# ") {
+				title = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "# "))
+			}
+			if strings.Contains(strings.ToLower(line), needle) {
+				matchedAny = true
+				results = append(results, Result{
+					Path:    rel,
+					Title:   title,
+					Line:    lineNo,
+					Snippet: strings.TrimSpace(line),
+				})
+			}
+		}
+		if fileHit && !matchedAny {
+			results = append(results, Result{
+				Path:    rel,
+				Title:   title,
+				Line:    0,
+				Snippet: "(Treffer im Dateinamen/Pfad)",
+			})
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
 
-\tsort.SliceStable(results, func(i, j int) bool {
-\t\tif results[i].Path == results[j].Path {
-\t\t\treturn results[i].Line < results[j].Line
-\t\t}
-\t\treturn results[i].Path < results[j].Path
-\t})
-\treturn results, nil
+	sort.SliceStable(results, func(i, j int) bool {
+		if results[i].Path == results[j].Path {
+			return results[i].Line < results[j].Line
+		}
+		return results[i].Path < results[j].Path
+	})
+	return results, nil
 }

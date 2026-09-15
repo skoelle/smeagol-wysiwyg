@@ -5,24 +5,24 @@
 package render
 
 import (
-\t"bytes"
+	"bytes"
 
-\t"github.com/yuin/goldmark"
-\t"github.com/yuin/goldmark/extension"
-\t"github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
 var md = goldmark.New(
-\tgoldmark.WithExtensions(extension.GFM),
-\tgoldmark.WithRendererOptions(
-\t\thtml.WithUnsafe(),
-\t),
+	goldmark.WithExtensions(extension.GFM),
+	goldmark.WithRendererOptions(
+		html.WithUnsafe(),
+	),
 )
 
 func ToHTML(source []byte) (string, error) {
-\tvar buf bytes.Buffer
-\tif err := md.Convert(source, &buf); err != nil {
-\t\treturn "", err
-\t}
-\treturn buf.String(), nil
+	var buf bytes.Buffer
+	if err := md.Convert(source, &buf); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
