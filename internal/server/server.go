@@ -6,8 +6,10 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
@@ -20,6 +22,8 @@ import (
 	"github.com/USERNAME/smeagol-wysiwyg/internal/vault"
 	"github.com/USERNAME/smeagol-wysiwyg/internal/watcher"
 )
+
+const maxBodySize = 10 << 20 // 10 MB
 
 type Server struct {
 	Vault   *vault.Vault
@@ -97,7 +101,8 @@ func (s *Server) handlePage(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleTree(w http.ResponseWriter, r *http.Request) {
 	tree, err := s.Vault.Tree()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("server: tree error: %v", err)
+		http.Error(w, "failed to build tree", http.StatusInternalServerError)
 		return
 	}
 	writeJSON(w, tree)
@@ -107,7 +112,8 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	results, err := search.Search(s.Vault.Root, q)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("server: search error: %v", err)
+		http.Error(w, "search failed", http.StatusInternalServerError)
 		return
 	}
 	writeJSON(w, results)
@@ -117,8 +123,7 @@ func (s *Server) handleGetRaw(w http.ResponseWriter, r *http.Request) {
 	reqPath := r.PathValue("path")
 	content, err := s.Vault.ReadFile(reqPath)
 	if err != nil {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
+		http.NotFound(w, r)
 		return
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -128,19 +133,25 @@ func (s *Server) handleGetRaw(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handlePutRaw(w http.ResponseWriter, r *http.Request) {
 	reqPath := r.PathValue("path")
 	defer r.Body.Close()
-	buf := make([]byte, 0, 8192)
-	tmp := make([]byte, 8192)
-	for {
-		n, err := r.Body.Read(tmp)
-		if n > 0 {
-			buf = append(buf, tmp[:n]...)
-		}
-		if err != nil {
-			break
-		}
+
+	limited := io.LimitReader(r.Body, maxBodySize+1)
+	buf, err := io.ReadAll(limited)
+	if err != nil {
+		http.Error(w, "failed to read request body", http.StatusBadRequest)
+		return
 	}
+	if int64(len(buf)) > maxBodySize {
+		http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+		return
+	}
+
 	if err := s.Vault.WriteFileAtomic(reqPath, buf); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		if errors.Is(err, vault.ErrOutsideVault) {
+			http.Error(w, "invalid path", http.StatusBadRequest)
+		} else {
+			log.Printf("server: write error for %s: %v", reqPath, err)
+			http.Error(w, "write failed", http.StatusInternalServerError)
+		}
 		return
 	}
 	writeJSON(w, map[string]any{

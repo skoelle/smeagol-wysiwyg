@@ -9,11 +9,15 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/USERNAME/smeagol-wysiwyg/internal/server"
 	"github.com/USERNAME/smeagol-wysiwyg/internal/vault"
@@ -49,10 +53,32 @@ func main() {
 	srv := server.New(v, w, assets)
 
 	addr := fmt.Sprintf("%s:%d", *host, *port)
-	log.Printf("smeagol-wysiwyg: vault=%s addr=http://%s", v.Root, addr)
-
-	if err := http.ListenAndServe(addr, srv); err != nil {
-		fmt.Fprintln(os.Stderr, "smeagol-wysiwyg:", err)
-		os.Exit(1)
+	httpSrv := &http.Server{
+		Addr:         addr,
+		Handler:      srv,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
+
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		log.Printf("smeagol-wysiwyg: vault=%s addr=http://%s", v.Root, addr)
+		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("smeagol-wysiwyg: %v", err)
+		}
+	}()
+
+	<-done
+	log.Println("smeagol-wysiwyg: shutting down...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := httpSrv.Shutdown(ctx); err != nil {
+		log.Fatalf("smeagol-wysiwyg: shutdown: %v", err)
+	}
+	log.Println("smeagol-wysiwyg: stopped")
 }
