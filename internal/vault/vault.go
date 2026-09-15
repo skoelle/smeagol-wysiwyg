@@ -39,8 +39,7 @@ func New(root string) (*Vault, error) {
 }
 
 func (v *Vault) Resolve(reqPath string) (string, error) {
-	cleaned := filepath.Clean("/" + strings.TrimPrefix(reqPath, "/"))
-	full := filepath.Join(v.Root, cleaned)
+	full := filepath.Clean(filepath.Join(v.Root, reqPath))
 
 	rootWithSep := v.Root
 	if !strings.HasSuffix(rootWithSep, string(os.PathSeparator)) {
