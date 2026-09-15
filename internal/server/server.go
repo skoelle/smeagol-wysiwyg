@@ -212,6 +212,32 @@ const pageHTML = `<!DOCTYPE html>
 {{.ContentHTML}}
 </main>
 
+<div id="editor-toolbar" class="editor-toolbar" hidden>
+  <div class="toolbar-group">
+    <button data-cmd="heading" title="Ueberschrift (Ctrl+Shift+1)">H</button>
+    <button data-cmd="paragraph" title="Absatz (Ctrl+Shift+0)">P</button>
+  </div>
+  <div class="toolbar-sep"></div>
+  <div class="toolbar-group">
+    <button data-cmd="bold" title="Fett (Ctrl+B)"><b>B</b></button>
+    <button data-cmd="italic" title="Kursiv (Ctrl+I)"><i>I</i></button>
+    <button data-cmd="strikethrough" title="Durchgestrichen (Alt+Shift+5)"><s>S</s></button>
+    <button data-cmd="inlinecode" title="Inline-Code (Ctrl+E)">&lt;/&gt;</button>
+  </div>
+  <div class="toolbar-sep"></div>
+  <div class="toolbar-group">
+    <button data-cmd="bulletlist" title="Aufzaehlung">* List</button>
+    <button data-cmd="orderedlist" title="Nummeriert">1. List</button>
+    <button data-cmd="blockquote" title="Zitat (Ctrl+Shift+9)">&ldquo;</button>
+    <button data-cmd="codeblock" title="Codeblock (Ctrl+Shift+K)">{ }</button>
+  </div>
+  <div class="toolbar-sep"></div>
+  <div class="toolbar-group">
+    <button data-cmd="hr" title="Trennlinie">---</button>
+    <button data-cmd="hardbreak" title="Zeilenumbruch">Shift+Enter</button>
+  </div>
+</div>
+
 <div id="editor-mount" class="editor-mount" hidden></div>
 
 <script src="/assets/main.js" defer></script>

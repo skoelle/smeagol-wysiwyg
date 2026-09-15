@@ -126,6 +126,7 @@ async function toggleEdit() {
 async function enterEditMode() {
   const contentEl = el("content");
   const mount = el("editor-mount");
+  const toolbar = el("editor-toolbar");
   const btn = el("btn-edit");
 
   const res = await fetch("/api/raw/" + state.path);
@@ -133,13 +134,44 @@ async function enterEditMode() {
 
   contentEl.hidden = true;
   mount.hidden = false;
+  toolbar.hidden = false;
   mount.innerHTML = "";
   btn.textContent = "Fertig";
   state.editing = true;
   setSaveState("saved", "Bereit");
 
   try {
-    const { Editor, rootCtx, defaultValueCtx, commonmark, listener, listenerCtx } = await import(MILKDOWN_URL);
+    const {
+      Editor, rootCtx, defaultValueCtx, commonmark, listener, listenerCtx,
+      toggleStrongCommand, toggleEmphasisCommand, toggleInlineCodeCommand,
+      wrapInBlockquoteCommand, createCodeBlockCommand,
+      wrapInBulletListCommand, wrapInOrderedListCommand,
+      wrapInHeadingCommand, turnIntoTextCommand,
+      insertHrCommand, insertHardbreakCommand,
+    } = await import(MILKDOWN_URL);
+
+    const cmdMap = {
+      bold:         () => toggleStrongCommand(),
+      italic:       () => toggleEmphasisCommand(),
+      strikethrough:() => toggleInlineCodeCommand(),
+      inlinecode:   () => toggleInlineCodeCommand(),
+      blockquote:   () => wrapInBlockquoteCommand(),
+      codeblock:    () => createCodeBlockCommand(),
+      bulletlist:   () => wrapInBulletListCommand(),
+      orderedlist:  () => wrapInOrderedListCommand(),
+      heading:      () => wrapInHeadingCommand(1),
+      paragraph:    () => turnIntoTextCommand(),
+      hr:           () => insertHrCommand(),
+      hardbreak:    () => insertHardbreakCommand(),
+    };
+
+    toolbar.querySelectorAll("button[data-cmd]").forEach((btn) => {
+      btn.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        const cmd = cmdMap[btn.dataset.cmd];
+        if (cmd) cmd();
+      });
+    });
 
     const editor = await Editor.make()
       .config((ctx) => {
@@ -170,6 +202,7 @@ async function enterEditMode() {
 async function exitEditMode() {
   const contentEl = el("content");
   const mount = el("editor-mount");
+  const toolbar = el("editor-toolbar");
   const btn = el("btn-edit");
 
   if (state.milkdownEditor && typeof state.milkdownEditor.destroy === "function") {
@@ -178,6 +211,7 @@ async function exitEditMode() {
   state.milkdownEditor = null;
   mount.hidden = true;
   mount.innerHTML = "";
+  toolbar.hidden = true;
   btn.textContent = "Bearbeiten";
   state.editing = false;
 
