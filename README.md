@@ -2,7 +2,7 @@
 
 A personal wiki inspired by [Smeagol](https://smeagol.dev) (AustinWise/smeagol), but with a real WYSIWYG editor instead of raw Markdown editing. Runs as a single Go binary, points at a directory of Markdown files ("vault") and serves them through a web interface.
 
-Details on the design goals are in [SPEC.md](SPEC.md), the implementation plan in [PLAN.md](PLAN.md).
+Details on the design goals and architecture are in [SPEC.md](SPEC.md).
 
 ## Features
 
@@ -80,7 +80,6 @@ Without a path argument the current working directory is used as the vault. Then
 |-- web/dist/vendor/         Vendored Milkdown editor bundle
 |-- testdata/vault/          Example vault for manual testing
 |-- SPEC.md                  Full specification
-`-- PLAN.md                  Implementation plan
 ```
 
 ## Non-Goals
