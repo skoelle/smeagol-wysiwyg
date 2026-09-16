@@ -17,7 +17,9 @@ const state = {
   saveTimer: null,
   saveDebounceMs: 1000,
   milkdownEditor: null,
+  milkdownModules: null,
   ignoreNextReloadFor: null,
+  scrollSpyObserver: null,
 };
 
 function el(id) { return document.getElementById(id); }
@@ -132,10 +134,11 @@ function buildTOC() {
 
   let headings = [];
 
-  if (state.editing && state.milkdownEditor) {
+  if (state.editing && state.milkdownEditor && state.milkdownModules) {
+    const { editorViewCtx } = state.milkdownModules;
     state.milkdownEditor.action((ctx) => {
       const view = ctx.get(editorViewCtx);
-      view.state.doc.descendants((node, pos) => {
+      view.state.doc.descendants((node) => {
         if (node.type.name === "heading") {
           const text = node.textContent;
           headings.push({
@@ -169,11 +172,16 @@ function buildTOC() {
     a.className = "toc-item";
     a.dataset.level = h.level;
     a.textContent = h.text;
-    a.href = "#" + h.id;
     a.addEventListener("click", (e) => {
       e.preventDefault();
-      const target = document.getElementById(h.id);
-      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (state.editing) {
+        const mount = el("editor-mount");
+        const heading = mount.querySelector("h" + h.level);
+        if (heading) heading.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        const target = document.getElementById(h.id);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     });
     panel.appendChild(a);
   });
@@ -188,9 +196,16 @@ function initScrollSpy() {
   if (items.length === 0) return;
 
   const targets = [];
-  items.forEach((item) => {
-    const id = item.getAttribute("href").slice(1);
-    const target = document.getElementById(id);
+  items.forEach((item, i) => {
+    let target = null;
+    if (state.editing) {
+      const mount = el("editor-mount");
+      const headings = mount.querySelectorAll("h1, h2, h3");
+      if (headings[i]) target = headings[i];
+    } else {
+      const id = item.textContent.toLowerCase().replace(/[^\w]+/g, "-");
+      target = document.getElementById(id);
+    }
     if (target) targets.push({ el: target, item: item });
   });
 
@@ -242,6 +257,8 @@ async function enterEditMode() {
       Editor, rootCtx, defaultValueCtx, editorViewCtx, commonmark, listener, listenerCtx,
       toggleMark, wrapIn, setBlockType, wrapInList,
     } = await import(MILKDOWN_URL);
+
+    state.milkdownModules = { editorViewCtx, toggleMark, wrapIn, setBlockType, wrapInList };
 
     function run(ed, build) {
       ed.action((ctx) => {
@@ -312,6 +329,7 @@ async function exitEditMode() {
     await state.milkdownEditor.destroy();
   }
   state.milkdownEditor = null;
+  state.milkdownModules = null;
   mount.hidden = true;
   mount.innerHTML = "";
   toolbar.hidden = true;
