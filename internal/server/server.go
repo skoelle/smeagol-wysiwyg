@@ -227,7 +227,7 @@ const pageHTML = `<!DOCTYPE html>
 </header>
 
 <nav id="overview-panel" class="overview-panel" hidden></nav>
-<div id="toc-panel" class="toc-panel" hidden></div>
+<div id="toc-panel" class="toc-panel"></div>
 <div id="search-panel" class="search-panel" hidden></div>
 
 <main id="content" data-path="{{.PathForJS}}" data-exists="{{.Exists}}">

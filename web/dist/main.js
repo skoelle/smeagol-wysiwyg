@@ -35,6 +35,7 @@ function init() {
   el("search-input").addEventListener("input", debounce(onSearchInput, 250));
 
   connectEvents();
+  buildTOC();
 }
 
 async function toggleOverview() {
