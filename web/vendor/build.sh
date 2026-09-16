@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-npm install --no-save @milkdown/core@7.3.6 @milkdown/preset-commonmark@7.3.6 @milkdown/plugin-listener@7.3.6 2>&1
+npm install --no-save @milkdown/core@7.3.6 @milkdown/preset-commonmark@7.3.6 @milkdown/plugin-listener@7.3.6 @milkdown/plugin-history@7.3.6 2>&1
 
 npx esbuild entry.js \
   --bundle \

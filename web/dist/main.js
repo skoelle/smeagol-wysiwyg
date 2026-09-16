@@ -255,7 +255,7 @@ async function enterEditMode() {
   try {
     const {
       Editor, rootCtx, defaultValueCtx, editorViewCtx, commonmark, listener, listenerCtx,
-      toggleMark, wrapIn, setBlockType, wrapInList,
+      history, toggleMark, wrapIn, setBlockType, wrapInList,
     } = await import(MILKDOWN_URL);
 
     state.milkdownModules = { editorViewCtx, toggleMark, wrapIn, setBlockType, wrapInList };
@@ -298,6 +298,7 @@ async function enterEditMode() {
         ctx.set(defaultValueCtx, raw);
       })
       .use(commonmark)
+      .use(history)
       .use(listener)
       .config((ctx) => {
         const l = ctx.get(listenerCtx);
