@@ -28,6 +28,7 @@ function init() {
   state.exists = contentEl.dataset.exists === "true";
 
   el("btn-overview").addEventListener("click", toggleOverview);
+  el("btn-toc").addEventListener("click", toggleTOC);
   el("btn-edit").addEventListener("click", toggleEdit);
   el("search-input").addEventListener("input", debounce(onSearchInput, 250));
 
@@ -115,6 +116,102 @@ function renderSearchResults(panel, results) {
   });
 }
 
+function toggleTOC() {
+  const panel = el("toc-panel");
+  if (!panel.hidden) {
+    panel.hidden = true;
+    return;
+  }
+  panel.hidden = false;
+  buildTOC();
+}
+
+function buildTOC() {
+  const panel = el("toc-panel");
+  panel.innerHTML = "";
+
+  let headings = [];
+
+  if (state.editing && state.milkdownEditor) {
+    state.milkdownEditor.action((ctx) => {
+      const view = ctx.get(editorViewCtx);
+      view.state.doc.descendants((node, pos) => {
+        if (node.type.name === "heading") {
+          const text = node.textContent;
+          headings.push({
+            level: node.attrs.level,
+            text: text,
+            id: text.toLowerCase().replace(/[^\w]+/g, "-"),
+          });
+        }
+      });
+    });
+  } else {
+    const contentEl = el("content");
+    contentEl.querySelectorAll("h1, h2, h3").forEach((h) => {
+      const id = h.textContent.toLowerCase().replace(/[^\w]+/g, "-");
+      h.id = id;
+      headings.push({
+        level: parseInt(h.tagName[1]),
+        text: h.textContent,
+        id: id,
+      });
+    });
+  }
+
+  if (headings.length === 0) {
+    panel.innerHTML = '<p class="empty-state">Keine Ueberschriften gefunden.</p>';
+    return;
+  }
+
+  headings.forEach((h) => {
+    const a = document.createElement("a");
+    a.className = "toc-item";
+    a.dataset.level = h.level;
+    a.textContent = h.text;
+    a.href = "#" + h.id;
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      const target = document.getElementById(h.id);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    panel.appendChild(a);
+  });
+
+  initScrollSpy();
+}
+
+function initScrollSpy() {
+  if (state.scrollSpyObserver) state.scrollSpyObserver.disconnect();
+
+  const items = el("toc-panel").querySelectorAll(".toc-item");
+  if (items.length === 0) return;
+
+  const targets = [];
+  items.forEach((item) => {
+    const id = item.getAttribute("href").slice(1);
+    const target = document.getElementById(id);
+    if (target) targets.push({ el: target, item: item });
+  });
+
+  state.scrollSpyObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        const match = targets.find((t) => t.el === entry.target);
+        if (match) {
+          if (entry.isIntersecting) {
+            items.forEach((i) => i.classList.remove("active"));
+            match.item.classList.add("active");
+          }
+        }
+      });
+    },
+    { rootMargin: "-80px 0px -70% 0px" }
+  );
+
+  targets.forEach((t) => state.scrollSpyObserver.observe(t.el));
+}
+
 async function toggleEdit() {
   if (state.editing) {
     await exitEditMode();
@@ -190,6 +287,7 @@ async function enterEditMode() {
         l.markdownUpdated((_ctx, markdown, prevMarkdown) => {
           if (markdown !== prevMarkdown) {
             scheduleSave(markdown);
+            if (!el("toc-panel").hidden) buildTOC();
           }
         });
       })
@@ -230,6 +328,8 @@ async function exitEditMode() {
     contentEl.dataset.exists = "true";
   }
   contentEl.hidden = false;
+
+  if (!el("toc-panel").hidden) buildTOC();
 }
 
 function scheduleSave(markdown) {

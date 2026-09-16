@@ -219,6 +219,7 @@ const pageHTML = `<!DOCTYPE html>
 <body>
 <header class="topbar">
   <button id="btn-overview" class="btn" aria-label="Overview">&#9776; Overview</button>
+  <button id="btn-toc" class="btn" aria-label="Table of Contents">&#9776; TOC</button>
   <input id="search-input" class="search-input" type="search" placeholder="Suche...">
   <div class="spacer"></div>
   <span id="save-indicator" class="save-indicator" data-state="idle"></span>
@@ -226,6 +227,7 @@ const pageHTML = `<!DOCTYPE html>
 </header>
 
 <nav id="overview-panel" class="overview-panel" hidden></nav>
+<div id="toc-panel" class="toc-panel" hidden></div>
 <div id="search-panel" class="search-panel" hidden></div>
 
 <main id="content" data-path="{{.PathForJS}}" data-exists="{{.Exists}}">
