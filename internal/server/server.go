@@ -80,12 +80,13 @@ func (s *Server) handlePage(w http.ResponseWriter, r *http.Request) {
 		data.Exists = false
 		data.Title = "Nicht gefunden"
 		data.ContentHTML = template.HTML(`<p class="empty-state">Diese Seite existiert noch nicht. Wechsle in den Bearbeitungsmodus, um sie anzulegen.</p>`)
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusNotFound)
 	} else {
 		data.Exists = true
 		htmlContent, rerr := render.ToHTML(content)
 		if rerr != nil {
-			http.Error(w, "Fehler beim Rendern: "+rerr.Error(), http.StatusInternalServerError)
+			log.Printf("server: render error for %s: %v", reqPath, rerr)
+			http.Error(w, "Fehler beim Rendern", http.StatusInternalServerError)
 			return
 		}
 		data.ContentHTML = template.HTML(htmlContent)
@@ -174,7 +175,9 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	ch, unsubscribe := s.Watcher.Subscribe()
 	defer unsubscribe()
 
-	fmt.Fprintf(w, ": connected\n\n")
+	if _, err := fmt.Fprintf(w, ": connected\n\n"); err != nil {
+		return
+	}
 	flusher.Flush()
 
 	for {
@@ -184,7 +187,9 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			payload, _ := json.Marshal(ev)
-			fmt.Fprintf(w, "data: %s\n\n", payload)
+			if _, err := fmt.Fprintf(w, "data: %s\n\n", payload); err != nil {
+				return
+			}
 			flusher.Flush()
 		case <-r.Context().Done():
 			return
@@ -195,6 +200,9 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 func writeJSON(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	enc := json.NewEncoder(w)
+	// SetEscapeHTML(false) is intentional: JSON is consumed by fetch(),
+	// not embedded in HTML. Content-Type: application/json prevents
+	// browser HTML interpretation. Keeps Markdown snippets readable in DevTools.
 	enc.SetEscapeHTML(false)
 	_ = enc.Encode(v)
 }

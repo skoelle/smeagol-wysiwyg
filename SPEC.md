@@ -112,7 +112,17 @@ A single Go binary that points at a vault path (a directory of Markdown files, i
 | PUT | `/api/raw/{path}` | Saves editor content |
 | GET | `/api/events` | SSE for live reload |
 
-### 6.4 Configuration
+### 6.4 Security Model
+
+smeagol is designed for local-only use or behind a reverse proxy with authentication (e.g. Authelia). The following are intentionally not implemented:
+
+- **No XSS sanitization**: Markdown can contain raw HTML/JS (`html.WithUnsafe()`). Only trusted users have vault access.
+- **No CSRF protection**: No CSRF token on PUT. Not needed for localhost-only or auth-proxy deployments.
+- **No security headers**: CSP, X-Frame-Options, etc. are omitted. Not relevant for the intended deployment model.
+
+If you need to expose smeagol to untrusted users, put it behind an authentication proxy and restrict network access.
+
+### 6.5 Configuration
 
 - `--host` (default `127.0.0.1`), `--port` (default `8000`).
 - Positional argument: vault path (default current working directory).

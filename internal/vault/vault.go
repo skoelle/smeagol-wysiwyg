@@ -149,12 +149,3 @@ func walkDir(root, dir string, node *Node) error {
 	}
 	return nil
 }
-
-func (v *Vault) Exists(reqPath string) bool {
-	full, err := v.Resolve(reqPath)
-	if err != nil {
-		return false
-	}
-	info, err := os.Stat(full)
-	return err == nil && !info.IsDir()
-}

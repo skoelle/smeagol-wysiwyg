@@ -108,13 +108,3 @@ func TestTree(t *testing.T) {
 		t.Fatalf("expected 2 children (README.md, sub/), got %d", len(tree.Children))
 	}
 }
-
-func TestExists(t *testing.T) {
-	v := setupTestVault(t)
-	if !v.Exists("README.md") {
-		t.Fatal("expected README.md to exist")
-	}
-	if v.Exists("does-not-exist.md") {
-		t.Fatal("expected does-not-exist.md to not exist")
-	}
-}

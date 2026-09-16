@@ -6,8 +6,6 @@ export {
   toggleMark,
   wrapIn,
   setBlockType,
-  lift,
-  newlineInCode,
 } from "prosemirror-commands";
 
 export {

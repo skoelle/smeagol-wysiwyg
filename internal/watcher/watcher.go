@@ -85,6 +85,9 @@ func (w *Watcher) loop() {
 	}
 }
 
+// handleRaw runs on the single loop goroutine.
+// w.mu is NOT needed here: addRecursive only calls w.fsw.Add(),
+// which has its own internal locking, and does not touch w.subs.
 func (w *Watcher) handleRaw(ev fsnotify.Event) {
 	if ev.Op&fsnotify.Create == fsnotify.Create {
 		if info, err := os.Stat(ev.Name); err == nil && info.IsDir() {

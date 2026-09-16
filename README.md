@@ -82,6 +82,16 @@ Without a path argument the current working directory is used as the vault. Then
 |-- SPEC.md                  Full specification
 ```
 
+## 🔒 Security
+
+smeagol is designed for local-only use or behind a reverse proxy with authentication (e.g. Authelia). The following are intentionally not implemented:
+
+- **No XSS sanitization**: Markdown can contain raw HTML/JS (`html.WithUnsafe()`). This is by design -- only trusted users have vault access.
+- **No CSRF protection**: The PUT endpoint has no CSRF token. Not needed for localhost-only or auth-proxy deployments.
+- **No security headers**: CSP, X-Frame-Options, etc. are omitted. Not relevant for the intended deployment model.
+
+If you need to expose smeagol to untrusted users, put it behind an authentication proxy and restrict network access.
+
 ## 🚫 Non-Goals
 
 See SPEC.md section 4: no multi-user support, no login, no public internet hosting, no image upload, no Git backend as storage engine (versioning the vault folder is left to the user, e.g. via separate `git add`/`git commit`).

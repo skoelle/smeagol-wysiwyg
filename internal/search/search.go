@@ -5,6 +5,7 @@ package search
 
 import (
 	"bufio"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -56,6 +57,7 @@ func Search(root, query string) ([]Result, error) {
 
 		title := d.Name()
 		scanner := bufio.NewScanner(f)
+		scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
 		lineNo := 0
 		matchedAny := false
 		for scanner.Scan() {
@@ -73,6 +75,9 @@ func Search(root, query string) ([]Result, error) {
 					Snippet: strings.TrimSpace(line),
 				})
 			}
+		}
+		if err := scanner.Err(); err != nil {
+			log.Printf("search: scanner error reading %s: %v", path, err)
 		}
 		if fileHit && !matchedAny {
 			results = append(results, Result{
