@@ -1,24 +1,24 @@
-# smeagol-wysiwyg
+# 🧙 smeagol-wysiwyg
 
 A personal wiki inspired by [Smeagol](https://smeagol.dev) (AustinWise/smeagol), but with a real WYSIWYG editor instead of raw Markdown editing. Runs as a single Go binary, points at a directory of Markdown files ("vault") and serves them through a web interface.
 
 Details on the design goals and architecture are in [SPEC.md](SPEC.md).
 
-## Features
+## ✨ Features
 
-- Single Go binary, no database, no runtime dependencies.
-- Points at any vault path with Markdown files, including arbitrarily deep subdirectories.
-- Starts by showing `README.md` in the vault root; each subdirectory can have its own `README.md` as an index page.
-- Overview button shows a tree view of the entire vault, accessible even on mobile viewports.
-- Full-text search across all Markdown files (content and path) via recursive filesystem scan with no persistent index.
-- Real WYSIWYG editor ([Milkdown](https://milkdown.dev)) instead of plain Markdown editing; content is saved as valid Markdown.
-- Instant save: no save button -- changes are saved automatically after a short typing pause, with visible status ("editing" / "saving..." / "saved" / "error").
-- Live reload: when a file changes externally (e.g. via `vim` on the server), the open page updates automatically with a conflict warning instead of silently overwriting if you are currently editing.
-- No upfront scan on startup: the vault is treated as externally mutable at all times.
-- Formatting toolbar with headings (h1/h2/h3), bold, italic, inline code, lists, blockquote, code block, horizontal rule and hard break.
-- Light mode UI.
+- 📦 Single Go binary, no database, no runtime dependencies.
+- 📂 Points at any vault path with Markdown files, including arbitrarily deep subdirectories.
+- 📄 Starts by showing `README.md` in the vault root; each subdirectory can have its own `README.md` as an index page.
+- 🗂️ Overview button shows a tree view of the entire vault, accessible even on mobile viewports.
+- 🔍 Full-text search across all Markdown files (content and path) via recursive filesystem scan with no persistent index.
+- ✏️ Real WYSIWYG editor ([Milkdown](https://milkdown.dev)) instead of plain Markdown editing; content is saved as valid Markdown.
+- 💾 Instant save: no save button -- changes are saved automatically after a short typing pause, with visible status ("editing" / "saving..." / "saved" / "error").
+- 🔄 Live reload: when a file changes externally (e.g. via `vim` on the server), the open page updates automatically with a conflict warning instead of silently overwriting if you are currently editing.
+- ⚡ No upfront scan on startup: the vault is treated as externally mutable at all times.
+- 🛠️ Formatting toolbar with headings (h1/h2/h3), bold, italic, inline code, lists, blockquote, code block, horizontal rule and hard break.
+- ☀️ Light mode UI.
 
-## Build
+## 🔨 Build
 
 Requires Go 1.23 or later.
 
@@ -44,7 +44,7 @@ The frontend assets in `web/dist/` (HTML/CSS/JS) are already in the repository a
 
 The WYSIWYG editor (Milkdown) is vendored into `web/dist/vendor/milkdown.js` and works fully offline. No internet connection is needed.
 
-## Tests
+## 🧪 Tests
 
 ```bash
 go test ./...
@@ -52,7 +52,7 @@ go test ./...
 
 Covers: path traversal protection in the vault layer, atomic writes, directory tree building and search (including umlauts and deeply nested paths).
 
-## Usage
+## 🚀 Usage
 
 ```bash
 ./smeagol-wysiwyg --host 127.0.0.1 --port 8000 /path/to/vault
@@ -64,7 +64,7 @@ Without a path argument the current working directory is used as the vault. Then
 ./smeagol-wysiwyg testdata/vault
 ```
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 .
@@ -82,10 +82,10 @@ Without a path argument the current working directory is used as the vault. Then
 |-- SPEC.md                  Full specification
 ```
 
-## Non-Goals
+## 🚫 Non-Goals
 
 See SPEC.md section 4: no multi-user support, no login, no public internet hosting, no image upload, no Git backend as storage engine (versioning the vault folder is left to the user, e.g. via separate `git add`/`git commit`).
 
-## License
+## 📜 License
 
 MIT, see [LICENSE](LICENSE).
