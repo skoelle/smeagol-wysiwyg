@@ -1,7 +1,7 @@
 export { Editor, rootCtx, defaultValueCtx, editorViewCtx } from "@milkdown/core";
 export { commonmark } from "@milkdown/preset-commonmark";
 export { listener, listenerCtx } from "@milkdown/plugin-listener";
-export { history } from "@milkdown/plugin-history";
+export { history } from "./history-shim.js";
 
 export {
   toggleMark,
