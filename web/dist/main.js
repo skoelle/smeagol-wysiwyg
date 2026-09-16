@@ -24,6 +24,17 @@ const state = {
 
 function el(id) { return document.getElementById(id); }
 
+function updateTopbarHeight() {
+  const topbar = el("topbar");
+  if (topbar) {
+    document.documentElement.style.setProperty("--topbar-height", topbar.offsetHeight + "px");
+  }
+}
+
+function isMobile() {
+  return window.innerWidth <= 640;
+}
+
 function init() {
   const contentEl = el("content");
   state.path = contentEl.dataset.path || "README.md";
@@ -34,8 +45,11 @@ function init() {
   el("btn-edit").addEventListener("click", toggleEdit);
   el("search-input").addEventListener("input", debounce(onSearchInput, 250));
 
+  updateTopbarHeight();
+  window.addEventListener("resize", debounce(updateTopbarHeight, 100));
+
   connectEvents();
-  buildTOC();
+  if (!isMobile()) buildTOC();
 }
 
 async function toggleOverview() {
@@ -306,7 +320,7 @@ async function enterEditMode() {
         l.markdownUpdated((_ctx, markdown, prevMarkdown) => {
           if (markdown !== prevMarkdown) {
             scheduleSave(markdown);
-            if (!el("toc-panel").hidden) buildTOC();
+            if (!el("toc-panel").hidden && !isMobile()) buildTOC();
           }
         });
       })
@@ -349,7 +363,7 @@ async function exitEditMode() {
   }
   contentEl.hidden = false;
 
-  if (!el("toc-panel").hidden) buildTOC();
+  if (!el("toc-panel").hidden && !isMobile()) buildTOC();
 }
 
 function scheduleSave(markdown) {

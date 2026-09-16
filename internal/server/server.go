@@ -217,7 +217,7 @@ const pageHTML = `<!DOCTYPE html>
 <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-<header class="topbar">
+<header id="topbar" class="topbar">
   <button id="btn-overview" class="btn" aria-label="Overview">&#9776; Overview</button>
   <button id="btn-toc" class="btn" aria-label="Table of Contents">&#9776; TOC</button>
   <input id="search-input" class="search-input" type="search" placeholder="Suche...">
