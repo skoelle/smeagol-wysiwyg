@@ -13,6 +13,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -52,6 +53,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/search", s.handleSearch)
 	s.mux.HandleFunc("GET /api/raw/{path...}", s.handleGetRaw)
 	s.mux.HandleFunc("PUT /api/raw/{path...}", s.handlePutRaw)
+	s.mux.HandleFunc("DELETE /api/raw/{path...}", s.handleDeleteRaw)
 	s.mux.HandleFunc("GET /api/events", s.handleEvents)
 }
 
@@ -159,6 +161,25 @@ func (s *Server) handlePutRaw(w http.ResponseWriter, r *http.Request) {
 		"ok":   true,
 		"path": reqPath,
 		"time": time.Now().Format(time.RFC3339),
+	})
+}
+
+func (s *Server) handleDeleteRaw(w http.ResponseWriter, r *http.Request) {
+	reqPath := r.PathValue("path")
+	if err := s.Vault.DeleteFile(reqPath); err != nil {
+		if errors.Is(err, vault.ErrOutsideVault) {
+			http.Error(w, "invalid path", http.StatusBadRequest)
+		} else if errors.Is(err, os.ErrNotExist) {
+			http.Error(w, "file not found", http.StatusNotFound)
+		} else {
+			log.Printf("server: delete error for %s: %v", reqPath, err)
+			http.Error(w, "delete failed", http.StatusInternalServerError)
+		}
+		return
+	}
+	writeJSON(w, map[string]any{
+		"ok":   true,
+		"path": reqPath,
 	})
 }
 

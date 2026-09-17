@@ -123,6 +123,17 @@ body {
 .tree-node > a:hover { color: var(--color-accent); }
 .tree-dir-label { color: var(--color-text-dim); font-weight: 600; margin: 0.4rem 0 0.1rem 0; }
 
+.tree-create {
+  margin: 0.8rem 0 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.7rem;
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-dim);
+  cursor: pointer;
+}
+.tree-create:hover { border-color: var(--color-accent); color: var(--color-accent); }
+
 .search-result { padding: 0.5rem 0; border-bottom: 1px solid var(--color-border); }
 .search-result a { color: var(--color-accent); text-decoration: none; font-weight: 600; }
 .search-result .snippet { color: var(--color-text-dim); font-size: 0.85rem; }

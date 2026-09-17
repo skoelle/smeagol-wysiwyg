@@ -20,6 +20,7 @@ const state = {
   milkdownModules: null,
   ignoreNextReloadFor: null,
   scrollSpyObserver: null,
+  lastMarkdown: "",
 };
 
 function el(id) { return document.getElementById(id); }
@@ -51,6 +52,10 @@ function init() {
   connectEvents();
   if (!isMobile()) buildTOC();
   highlightSearchMatch();
+  if (new URLSearchParams(location.search).get("edit") === "1") {
+    enterEditMode();
+    history.replaceState(null, "", location.pathname);
+  }
 }
 
 async function toggleOverview() {
@@ -66,8 +71,34 @@ async function toggleOverview() {
     const tree = await res.json();
     panel.innerHTML = "";
     panel.appendChild(renderTreeNode(tree, true));
+    const createBtn = document.createElement("button");
+    createBtn.className = "btn tree-create";
+    createBtn.textContent = "+ Neue Seite";
+    createBtn.addEventListener("click", createNewPage);
+    panel.appendChild(createBtn);
   } catch (e) {
     panel.innerHTML = "Fehler beim Laden der Übersicht.";
+  }
+}
+
+async function createNewPage() {
+  const input = prompt("Pfad (z.B. notes/meeting):");
+  if (!input || !input.trim()) return;
+  const clean = input.trim().replace(/\.md$/, "").replace(/[\/\\]/g, (m) => m === "\\" ? "/" : m);
+  if (clean.includes("..")) return;
+  const path = clean + ".md";
+  try {
+    const res = await fetch("/api/raw/" + path, {
+      method: "PUT",
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+      body: "",
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    state.path = path;
+    state.exists = true;
+    window.location = "/page/" + path + "?edit=1";
+  } catch (e) {
+    alert("Fehler beim Anlegen: " + e.message);
   }
 }
 
@@ -350,6 +381,7 @@ async function enterEditMode() {
       .config((ctx) => {
         const l = ctx.get(listenerCtx);
         l.markdownUpdated((_ctx, markdown, prevMarkdown) => {
+          state.lastMarkdown = markdown;
           if (markdown !== prevMarkdown) {
             scheduleSave(markdown);
             if (!el("toc-panel").hidden && !isMobile()) buildTOC();
@@ -373,6 +405,8 @@ async function exitEditMode() {
   const toolbar = el("editor-toolbar");
   const btn = el("btn-edit");
 
+  const isEmpty = !state.lastMarkdown.trim();
+
   if (state.milkdownEditor && typeof state.milkdownEditor.destroy === "function") {
     await state.milkdownEditor.destroy();
   }
@@ -384,6 +418,17 @@ async function exitEditMode() {
   btn.textContent = "Bearbeiten";
   state.editing = false;
 
+  if (isEmpty && state.exists) {
+    try {
+      await fetch("/api/raw/" + state.path, { method: "DELETE" });
+      state.exists = false;
+      setSaveState("saved");
+    } catch (e) {
+      console.error("Delete failed:", e);
+      setSaveState("error");
+    }
+  }
+
   const res = await fetch("/page/" + state.path);
   const html = await res.text();
   const parser = new DOMParser();
@@ -391,7 +436,7 @@ async function exitEditMode() {
   const newContent = doc.getElementById("content");
   if (newContent) {
     contentEl.innerHTML = newContent.innerHTML;
-    contentEl.dataset.exists = "true";
+    contentEl.dataset.exists = state.exists ? "true" : "false";
   }
   contentEl.hidden = false;
 

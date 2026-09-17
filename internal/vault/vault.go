@@ -100,6 +100,33 @@ func (v *Vault) WriteFileAtomic(reqPath string, content []byte) error {
 	return nil
 }
 
+func (v *Vault) DeleteFile(reqPath string) error {
+	full, err := v.Resolve(reqPath)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(full); err != nil {
+		return os.ErrNotExist
+	}
+	if err := os.Remove(full); err != nil {
+		return err
+	}
+	v.cleanupEmptyDirs(filepath.Dir(full))
+	return nil
+}
+
+func (v *Vault) cleanupEmptyDirs(dir string) {
+	for dir != v.Root {
+		entries, err := os.ReadDir(dir)
+		if err != nil || len(entries) > 0 {
+			return
+		}
+		parent := filepath.Dir(dir)
+		os.Remove(dir)
+		dir = parent
+	}
+}
+
 type Node struct {
 	Name     string  `json:"name"`
 	Path     string  `json:"path"`
