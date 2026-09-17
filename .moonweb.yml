@@ -1,0 +1,7 @@
+title: "Smeagol WYSIWYG"
+emoji: "🧙"
+category: code
+subcategory: "Dev Tools"
+description: "Personal wiki with WYSIWYG editor for Markdown files"
+status: active
+stack: [Go, Milkdown, Markdown]
