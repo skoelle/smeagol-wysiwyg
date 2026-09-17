@@ -47,7 +47,10 @@ body {
 .btn:hover { background: var(--color-accent); }
 
 .search-input {
-  flex: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
   max-width: 320px;
   background: var(--color-bg);
   border: 1px solid var(--color-border);
@@ -56,18 +59,17 @@ body {
   padding: 0.5rem 0.7rem;
 }
 
-.spacer { flex: 1; }
-
 .save-indicator {
-  font-size: 0.85rem;
-  color: var(--color-text-dim);
-  min-width: 140px;
-  text-align: right;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-ok);
+  flex-shrink: 0;
 }
-.save-indicator[data-state="editing"] { color: var(--color-warn); }
-.save-indicator[data-state="saving"] { color: var(--color-accent); }
-.save-indicator[data-state="saved"] { color: var(--color-ok); }
-.save-indicator[data-state="error"] { color: var(--color-error); }
+.save-indicator[data-state="editing"] { background: var(--color-warn); }
+.save-indicator[data-state="saving"] { background: var(--color-accent); }
+.save-indicator[data-state="saved"] { background: var(--color-ok); }
+.save-indicator[data-state="error"] { background: var(--color-error); }
 
 .overview-panel, .search-panel {
   position: fixed;
@@ -225,8 +227,9 @@ main#content a { color: var(--color-accent); }
     flex-wrap: wrap;
     gap: 0.4rem;
   }
-  .search-input { order: 3; width: 100%; max-width: none; }
+  .search-input { position: relative; left: auto; transform: none; top: auto; flex: 1; max-width: none; margin: 0; }
   .save-indicator { min-width: auto; }
   .overview-panel, .search-panel { width: 100%; top: var(--topbar-height); }
   #btn-toc, .toc-panel { display: none !important; }
+  .btn-text { display: none; }
 }

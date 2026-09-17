@@ -218,12 +218,11 @@ const pageHTML = `<!DOCTYPE html>
 </head>
 <body>
 <header id="topbar" class="topbar">
-  <button id="btn-overview" class="btn" aria-label="Overview">&#9776; Overview</button>
+  <button id="btn-overview" class="btn" aria-label="Overview">&#9776;<span class="btn-text"> Overview</span></button>
   <button id="btn-toc" class="btn" aria-label="Table of Contents">&#9776; TOC</button>
-  <input id="search-input" class="search-input" type="search" placeholder="Suche...">
-  <div class="spacer"></div>
+  <button id="btn-edit" class="btn" aria-label="Edit">&#9998;<span class="btn-text"> Bearbeiten</span></button>
   <span id="save-indicator" class="save-indicator" data-state="idle"></span>
-  <button id="btn-edit" class="btn">Bearbeiten</button>
+  <input id="search-input" class="search-input" type="search" placeholder="Suche...">
 </header>
 
 <nav id="overview-panel" class="overview-panel" hidden></nav>

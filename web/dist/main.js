@@ -265,7 +265,7 @@ async function enterEditMode() {
   mount.innerHTML = "";
   btn.textContent = "Fertig";
   state.editing = true;
-  setSaveState("saved", "Bereit");
+  setSaveState("saved");
 
   try {
     const {
@@ -367,13 +367,13 @@ async function exitEditMode() {
 }
 
 function scheduleSave(markdown) {
-  setSaveState("editing", "Ungespeicherte Aenderungen");
+  setSaveState("editing");
   if (state.saveTimer) clearTimeout(state.saveTimer);
   state.saveTimer = setTimeout(() => save(markdown), state.saveDebounceMs);
 }
 
 async function save(markdown) {
-  setSaveState("saving", "Speichert...");
+  setSaveState("saving");
   try {
     state.ignoreNextReloadFor = state.path;
     const res = await fetch("/api/raw/" + state.path, {
@@ -383,18 +383,17 @@ async function save(markdown) {
     });
     if (!res.ok) throw new Error("HTTP " + res.status);
     const now = new Date();
-    setSaveState("saved", "Gespeichert " + now.toLocaleTimeString());
+    setSaveState("saved");
     state.exists = true;
   } catch (err) {
     console.error("Speichern fehlgeschlagen:", err);
-    setSaveState("error", "Fehler beim Speichern");
+    setSaveState("error");
   }
 }
 
-function setSaveState(stateName, text) {
+function setSaveState(stateName) {
   const indicator = el("save-indicator");
   indicator.dataset.state = stateName;
-  indicator.textContent = text;
 }
 
 function connectEvents() {
