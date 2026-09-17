@@ -127,6 +127,12 @@ body {
 .search-result a { color: var(--color-accent); text-decoration: none; font-weight: 600; }
 .search-result .snippet { color: var(--color-text-dim); font-size: 0.85rem; }
 
+.search-highlight {
+  background: #fef08a;
+  border-radius: 2px;
+  padding: 1px 0;
+}
+
 main#content, .editor-mount {
   max-width: 780px;
   margin: 1.5rem auto;

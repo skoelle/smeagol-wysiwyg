@@ -50,6 +50,7 @@ function init() {
 
   connectEvents();
   if (!isMobile()) buildTOC();
+  highlightSearchMatch();
 }
 
 async function toggleOverview() {
@@ -106,23 +107,30 @@ async function onSearchInput(evt) {
   try {
     const res = await fetch("/api/search?q=" + encodeURIComponent(q));
     const results = await res.json();
-    renderSearchResults(panel, results);
+    renderSearchResults(panel, results, q);
   } catch (e) {
     panel.innerHTML = "Fehler bei der Suche.";
   }
 }
 
-function renderSearchResults(panel, results) {
+function renderSearchResults(panel, results, query) {
   panel.innerHTML = "";
   if (!results || results.length === 0) {
     panel.innerHTML = '<p class="empty-state">Keine Treffer.</p>';
     return;
   }
+  const pathCounts = {};
   results.forEach((r) => {
+    pathCounts[r.path] = (pathCounts[r.path] || 0) + 1;
+  });
+  const pathIdx = {};
+  results.forEach((r) => {
+    const idx = pathIdx[r.path] || 0;
+    pathIdx[r.path] = idx + 1;
     const div = document.createElement("div");
     div.className = "search-result";
     const a = document.createElement("a");
-    a.href = "/page/" + r.path;
+    a.href = "/page/" + r.path + "?q=" + encodeURIComponent(query) + "&idx=" + idx;
     a.textContent = r.title || r.path;
     const snippet = document.createElement("div");
     snippet.className = "snippet";
@@ -131,6 +139,30 @@ function renderSearchResults(panel, results) {
     div.appendChild(snippet);
     panel.appendChild(div);
   });
+}
+
+function highlightSearchMatch() {
+  const params = new URLSearchParams(location.search);
+  const q = params.get("q");
+  if (!q) return;
+  const targetIdx = parseInt(params.get("idx"), 10);
+  const contentEl = el("content");
+  const regex = new RegExp("(" + q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi");
+  const textNodes = [];
+  const walker = document.createTreeWalker(contentEl, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+  const matches = [];
+  textNodes.forEach((node) => {
+    if (!regex.test(node.nodeValue)) return;
+    regex.lastIndex = 0;
+    const span = document.createElement("span");
+    span.innerHTML = node.nodeValue.replace(regex, '<mark class="search-highlight">$1</mark>');
+    node.parentNode.replaceChild(span, node);
+    matches.push(...span.querySelectorAll(".search-highlight"));
+  });
+  if (!matches.length) return;
+  const idx = (!isNaN(targetIdx) && targetIdx < matches.length) ? targetIdx : 0;
+  matches[idx].scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 function toggleTOC() {
